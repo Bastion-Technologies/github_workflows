@@ -9,7 +9,7 @@ on:
     secrets:
       AWS_CICD_ROLE:
         required: true
-      AWS_CICD_ACCES_KEY:
+      AWS_CICD_ACCESS_KEY:
         required: true
       AWS_CICD_SECRET_KEY:
         required: true
