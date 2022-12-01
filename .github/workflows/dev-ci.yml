@@ -1,5 +1,5 @@
 name: Deploy on AWS environmen
-# This workflow is triggered on PRs
+
 on:
   workflow_call:
     inputs:
