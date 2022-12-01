@@ -1,4 +1,4 @@
-name: Deploy on AWS environmen
+name: Deploy on AWS environment
 
 on:
   workflow_call:
