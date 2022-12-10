@@ -13,6 +13,8 @@ on:
         required: true
       AWS_CICD_SECRET_KEY:
         required: true
+      SLACK_WEBHOOK:
+        required: false
 
 jobs:
   deploy:
@@ -58,3 +60,14 @@ jobs:
           ./deploy.sh
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Slack Notification
+        if: "${{ env.SLACK_WEBHOOK != '' }}"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+              SLACK_CHANNEL: github-cis
+              SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+              SLACK_ICON: https://github.com/rtCamp.png?size=48
+              SLACK_MESSAGE: ':spongebobbing:'
+              SLACK_TITLE: ':spongebobbing: ${{ github.repository }} :rocket:'
+              SLACK_USERNAME: 'Bob'
+              SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
