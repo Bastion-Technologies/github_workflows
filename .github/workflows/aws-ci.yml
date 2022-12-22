@@ -55,6 +55,7 @@ jobs:
           if [ -f "install.sh" ]
             then
                 echo "install.sh script found! running it";
+                chmod 700 install.sh
                 ./install.sh
             else
                echo "install.sh script NOT found! running `npm ci`";
