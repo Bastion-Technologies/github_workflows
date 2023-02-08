@@ -73,7 +73,7 @@ jobs:
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Slack Notification
-        if: "${{ env.notify-slack == true }}"
+        if: "${{ always() }}"
         uses: rtCamp/action-slack-notify@v2
         env:
               SLACK_CHANNEL: github-cis
