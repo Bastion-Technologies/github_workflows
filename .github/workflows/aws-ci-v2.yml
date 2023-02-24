@@ -1,0 +1,88 @@
+name: Deploy on AWS environment
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        required: true
+        type: string
+      notify-slack:
+        required: false
+        type: boolean
+    secrets:
+      AWS_CICD_ROLE:
+        required: true
+      AWS_CICD_ACCESS_KEY:
+        required: true
+      AWS_CICD_SECRET_KEY:
+        required: true
+      SLACK_WEBHOOK:
+        required: false
+
+jobs:
+  deploy:
+    name: Build And Deploy
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
+    steps:
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: cdk/package-lock.json
+          registry-url: https://npm.pkg.github.com/
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+          aws-region: ${{ inputs.region }}
+          role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
+          role-duration-seconds: 1800
+          role-session-name: GitActionDeploymentSession
+
+      - name: Prerequisite Installation
+        run: npm install -g aws-cdk
+
+      - name: install dependencies
+        run: |
+          if [ -f "install.sh" ]
+            then
+                echo "install.sh script found! running it";
+                chmod 700 install.sh
+                ./install.sh
+            else
+               echo "install.sh script NOT found! running `npm ci`";
+               cd cdk;
+               npm ci;
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Deploy
+        run: |
+          cd $GITHUB_WORKSPACE
+          ls -a
+          chmod 700 deploy.sh
+          ./deploy.sh
+        env:
+          GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Slack Notification
+        if: "${{ always() }}"
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_CHANNEL: github-cis
+          SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+          SLACK_ICON: https://github.com/rtCamp.png?size=48
+          SLACK_MESSAGE: ":spongebobbing:"
+          SLACK_TITLE: ":spongebobbing: ${{ github.repository }} :rocket:"
+          SLACK_USERNAME: "Bob"
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
