@@ -21,6 +21,10 @@ on:
 
 jobs:
   deploy:
+    defaults:
+      run:
+        working-directory: ./cdk
+
     name: Build And Deploy
 
     runs-on: ubuntu-latest
@@ -33,7 +37,7 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: '**/package-lock.json'
+          cache-dependency-path: "**/package-lock.json"
           registry-url: https://npm.pkg.github.com/
 
       - name: Checkout
