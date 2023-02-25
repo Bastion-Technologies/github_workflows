@@ -37,11 +37,11 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: worker/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
           registry-url: https://npm.pkg.github.com/
 
-      - name: Checkout
-        uses: actions/checkout@v2
+#       - name: Checkout
+#         uses: actions/checkout@v2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
