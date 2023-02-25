@@ -64,7 +64,6 @@ jobs:
                 ./install.sh
             else
                echo "install.sh script NOT found! running `npm ci`";
-               cd cdk;
                npm ci;
           fi
         env:
@@ -72,8 +71,6 @@ jobs:
 
       - name: Build & Deploy
         run: |
-          cd $GITHUB_WORKSPACE
-          ls -a
           chmod 700 deploy.sh
           ./deploy.sh
         env:
