@@ -1,21 +1,6 @@
 name: Reviews Label (AWS tested + bt dependencies)
 on: workflow_call
 jobs:
-  aws-tested:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    permissions:
-      issues: write
-      pull-requests: write
-    steps:
-      - name: "PR is tested in AWS"
-        uses: mheap/github-action-required-labels@v4
-        with:
-          mode: exactly
-          add_comment: false
-          count: 1
-          labels: "aws:tested"
-          message: "This PR needs to be tested in the cloud, please add the tag `aws:tested` when done."
   bt-dependencies:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
