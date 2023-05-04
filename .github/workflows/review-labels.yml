@@ -1,7 +1,5 @@
 name: Reviews Label (AWS tested + bt dependencies)
-on:
-  pull_request:
-    types: [opened, labeled, unlabeled, synchronize]
+on: workflow_call
 jobs:
   aws-tested:
     runs-on: ubuntu-latest
