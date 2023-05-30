@@ -1,0 +1,18 @@
+name: Reviews Label (AWS tested + bt dependencies)
+on: workflow_call
+jobs:
+  bt-dependencies:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: "bt-dependencies is updated"
+        uses: mheap/github-action-required-labels@v4
+        with:
+          mode: exactly
+          add_comment: false
+          count: 1
+          labels: "bt-dependencies updated"
+          message: "Have you updated `bt-dependencies`? "

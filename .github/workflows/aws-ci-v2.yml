@@ -32,16 +32,15 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: "**/package-lock.json"
+          cache-dependency-path: '**/package-lock.json'
           registry-url: https://npm.pkg.github.com/
-
-      - name: Checkout
-        uses: actions/checkout@v2
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -54,7 +53,7 @@ jobs:
           role-session-name: GitActionDeploymentSession
 
       - name: Prerequisite Installation
-        run: npm install -g aws-cdk
+        run: npm install -g aws-cdk esbuild
 
       - name: install dependencies
         run: |
@@ -65,7 +64,6 @@ jobs:
                 ./install.sh
             else
                echo "install.sh script NOT found! running `npm ci`";
-               cd cdk;
                npm ci;
           fi
         env:
@@ -73,8 +71,6 @@ jobs:
 
       - name: Build & Deploy
         run: |
-          cd $GITHUB_WORKSPACE
-          ls -a
           chmod 700 deploy.sh
           ./deploy.sh
         env:
