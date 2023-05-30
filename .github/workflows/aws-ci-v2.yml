@@ -79,6 +79,7 @@ jobs:
           ./deploy.sh
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Slack Notification
         if: "${{ always() }}"
         uses: rtCamp/action-slack-notify@v2
