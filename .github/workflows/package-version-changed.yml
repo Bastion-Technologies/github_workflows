@@ -42,7 +42,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '⚠️ if you want to update the library please run npm run upgrade-api!'
+              body: '⚠️ if you want to update the library ${{ inputs.library-name }} please run npm run upgrade-api!'
             })
       - name: "Post comment on PR on success"
         uses: actions/github-script@v5
