@@ -32,3 +32,26 @@ jobs:
             echo version did not change main: ${{env.MAIN}}, current: ${{env.CURRENT}};
             echo "::error::Version of ${{ inputs.library-name}} has not been updated" && exit 1;
           fi
+      - name: "Post comment on PR on failure"
+        if: ${{ failure() }}
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ if you want to update the library please run npm run upgrade-api!'
+            })
+      - name: "Post comment on PR on success"
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ You are updating library ${{ inputs.library-name }} to version ${{ env.CURRENT }}.'
+            })
