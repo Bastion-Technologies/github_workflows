@@ -12,6 +12,9 @@ jobs:
     outputs:
       isdiff: ${{ steps.check.outputs.isdiff }}
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - id: check
         name: git diff yaml definition change
         run: |
