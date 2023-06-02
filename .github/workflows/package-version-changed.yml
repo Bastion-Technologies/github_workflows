@@ -18,6 +18,7 @@ jobs:
       - id: check
         name: git diff yaml definition change
         run: |
+          git fetch origin main
           api_file=$(find . -name ${{ inputs.library-name }}.yaml);
           if git diff --exit-code main -- $api_file; then
             echo "isdiff=no" >> "$GITHUB_OUTPUT"
