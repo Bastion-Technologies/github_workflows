@@ -32,8 +32,8 @@ jobs:
       - name: "compare version"
         id: "chec"
         run: |
-          if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
-            echo version did not change main: ${{env.MAIN}}, current: ${{env.CURRENT}};
+          if [ "${{env.PREVIOUS}}" = "${{env.CURRENT}}" ]; then
+            echo version did not change main: ${{env.PREVIOUS}}, current: ${{env.CURRENT}};
             echo "isdiff=no" >> "$GITHUB_OUTPUT";
           else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT";
