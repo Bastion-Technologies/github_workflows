@@ -20,7 +20,7 @@ jobs:
         run: |
           git fetch origin main
           api_file=$(find . -name ${{ inputs.library-name }}.yaml);
-          if git diff --exit-code main -- $api_file; then
+          if git diff --exit-code origin/main -- $api_file; then
             echo "isdiff=no" >> "$GITHUB_OUTPUT"
           else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT"
