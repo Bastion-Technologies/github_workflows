@@ -18,7 +18,7 @@ jobs:
           api_file=$(find . -name ${{ inputs.library-name }}.yaml);
           if git diff main:$api_file $api_file --exit-code; then
             echo "isdiff=no" >> "$GITHUB_OUTPUT"
-          elif
+          else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT"
           fi
   notify-if-changed:
