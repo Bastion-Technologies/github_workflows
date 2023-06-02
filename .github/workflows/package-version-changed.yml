@@ -9,6 +9,22 @@ on:
 jobs:
   check-if-changed:
     runs-on: ubuntu-latest
+    outputs:
+      isdiff: ${{ steps.check.outputs.isdiff }}
+    steps:
+      - id: check
+        name: git diff yaml definition change
+        run: |
+          api_file=$(find . -name ${{ inputs.library-name }}.yaml);
+          if git diff main:$api_file $api_file --exit-code; then
+            echo "isdiff=no" >> "$GITHUB_OUTPUT"
+          elif
+            echo "isdiff=yes" >> "$GITHUB_OUTPUT"
+          fi
+  notify-if-changed:
+    needs: check-if-changed
+    if: needs.check-if-changed.outputs.isdiff == 'yes'
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
