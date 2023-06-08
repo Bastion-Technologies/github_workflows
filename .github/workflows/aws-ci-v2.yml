@@ -64,6 +64,7 @@ jobs:
                 ./install.sh
             else
                echo "install.sh script NOT found! running `npm ci`";
+               cd ..;
                npm ci;
           fi
         env:
