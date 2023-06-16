@@ -72,7 +72,7 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/${{ steps.package-version.outputs.current-version}}',
+              ref: 'refs/tags/${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}',
               sha: context.sha
             })
       - name: Trigger webapp-api upgrade
@@ -85,6 +85,6 @@ jobs:
           --data '{
               "ref": "main",
               "inputs": {
-                  "api-name": "test-api-name"
+                  "api-name": ${{ inputs.library-name }}
               }
           }'
