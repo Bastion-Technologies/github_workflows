@@ -76,6 +76,7 @@ jobs:
               sha: context.sha
             })
       - name: Trigger webapp-api upgrade
+        if: ${{ inputs.package-json-dir-path != 'api' }}
         run: |
           curl --location 'https://api.github.com/repos/Bastion-Technologies/webapp-api/actions/workflows/create-pr-upgrade.yml/dispatches' \
           --header 'Accept: application/vnd.github+json' \
