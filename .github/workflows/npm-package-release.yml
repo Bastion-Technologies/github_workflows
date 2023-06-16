@@ -86,6 +86,6 @@ jobs:
           --data '{
               "ref": "main",
               "inputs": {
-                  "api-name": ${{ inputs.library-name }}
+                  "api-name": "${{ inputs.library-name }}"
               }
           }'
