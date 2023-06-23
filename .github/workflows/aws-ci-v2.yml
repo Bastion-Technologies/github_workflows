@@ -6,6 +6,9 @@ on:
       region:
         required: true
         type: string
+      stack:
+        required: false
+        type: string
       notify-slack:
         required: false
         type: boolean
@@ -18,6 +21,9 @@ on:
         required: true
       SLACK_WEBHOOK:
         required: false
+concurrency:
+  group: build-${{ inputs.stack }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
