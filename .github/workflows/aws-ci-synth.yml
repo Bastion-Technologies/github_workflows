@@ -1,0 +1,81 @@
+name: Deploy on AWS environment
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        required: true
+        type: string
+      stack:
+        required: false
+        type: string
+    secrets:
+      AWS_CICD_ROLE:
+        required: true
+      AWS_CICD_ACCESS_KEY:
+        required: true
+      AWS_CICD_SECRET_KEY:
+        required: true
+concurrency:
+  group: build-${{ inputs.stack }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    defaults:
+      run:
+        working-directory: ./cdk
+
+    name: Build And Deploy
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: '**/package-lock.json'
+          registry-url: https://npm.pkg.github.com/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+          aws-region: ${{ inputs.region }}
+          role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
+          role-duration-seconds: 1800
+          role-session-name: GitActionDeploymentSession
+
+      - name: Prerequisite Installation
+        run: npm install -g aws-cdk esbuild
+
+      - name: install dependencies
+        run: |
+          if [ -f "install.sh" ]
+            then
+                echo "install.sh script found! running it";
+                chmod 700 install.sh
+                ./install.sh
+            else
+               echo "install.sh script NOT found! running `npm ci`";
+               cd ..;
+               npm ci;
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & Synth
+        run: |
+          chmod 700 synth.sh
+          ./synth.sh
+        env:
+          GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
