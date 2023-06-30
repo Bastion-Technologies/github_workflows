@@ -1,4 +1,4 @@
-name: Deploy on AWS environment
+name: Synth on PR
 
 on:
   workflow_call:
@@ -23,7 +23,7 @@ jobs:
       run:
         working-directory: ./cdk
 
-    name: Build And Deploy
+    name: Build And Synth
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
