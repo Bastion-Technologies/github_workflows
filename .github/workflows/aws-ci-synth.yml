@@ -16,9 +16,6 @@ on:
         required: true
       AWS_CICD_SECRET_KEY:
         required: true
-concurrency:
-  group: build-${{ inputs.stack }}
-  cancel-in-progress: false
 
 jobs:
   deploy:
