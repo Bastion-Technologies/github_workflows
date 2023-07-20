@@ -75,7 +75,19 @@ jobs:
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      - name: run tests
+        run: |
+          if [ -f "test.sh" ]
+            then
+                echo "test.sh script found! running it";
+                chmod 700 test.sh
+                ./test.sh
+            else
+               echo "test.sh script NOT found!
+               cd ..;
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build & Deploy
         run: |
           chmod 700 deploy.sh
