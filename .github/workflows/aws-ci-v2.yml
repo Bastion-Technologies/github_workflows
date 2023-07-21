@@ -83,7 +83,7 @@ jobs:
                 chmod 700 test.sh
                 ./test.sh
             else
-               echo "test.sh script NOT found!
+               echo "test.sh script NOT found!"
                cd ..;
           fi
         env:
