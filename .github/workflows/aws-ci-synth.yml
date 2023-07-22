@@ -68,6 +68,11 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Typescript checking
+        run: |
+          cd ..;
+          npm run compile --workspaces --if-present;
+
       - name: Build & Synth
         run: |
           chmod 700 synth.sh
