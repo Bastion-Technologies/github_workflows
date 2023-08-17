@@ -73,6 +73,11 @@ jobs:
           cd ..;
           npm run compile --workspaces --if-present;
 
+      - name: Run unit tests
+        run: |
+          cd ..;
+          npm test --workspaces --if-present;
+
       - name: Build & Synth
         run: |
           chmod 700 synth.sh
