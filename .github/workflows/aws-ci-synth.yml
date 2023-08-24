@@ -73,6 +73,11 @@ jobs:
           cd ..;
           npm run compile --workspaces --if-present;
 
+      - name: Linter checking
+        run: |
+          cd ..;
+          npm run lint --workspaces --if-present;
+
       - name: Run unit tests
         run: |
           cd ..;
