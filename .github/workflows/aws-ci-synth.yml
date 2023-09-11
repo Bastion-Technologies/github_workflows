@@ -18,12 +18,12 @@ on:
         required: true
 
 jobs:
-  deploy:
+  build:
     defaults:
       run:
         working-directory: ./cdk
 
-    name: Build And Synth
+    name: Build
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -37,21 +37,8 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: '**/package-lock.json'
+          cache-dependency-path: "**/package-lock.json"
           registry-url: https://npm.pkg.github.com/
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
-          aws-region: ${{ inputs.region }}
-          role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
-          role-duration-seconds: 1800
-          role-session-name: GitActionDeploymentSession
-
-      - name: Prerequisite Installation
-        run: npm install -g aws-cdk esbuild
 
       - name: install dependencies
         run: |
@@ -68,26 +55,106 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/cache/save@v3
+        id: cache
+        with:
+          path: "**/node_modules/**"
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+
+  typescript-check:
+    name: Typescript checking
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        id: restore-cache
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
       - name: Typescript checking
         run: |
-          cd ..;
           npm run compile --workspaces --if-present;
+  linter-check:
+    name: Linter checking
 
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        id: restore-cache
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
       - name: Linter checking
         run: |
-          cd ..;
           npm run lint --workspaces --if-present;
+  test-check:
+    name: Run unit tests
 
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        id: restore-cache
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
       - name: Run unit tests
         run: |
-          cd ..;
           npm test --workspaces --if-present;
+  synth-check:
+    name: CDK Synth
 
-      - name: Build & Synth
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        id: restore-cache
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+          aws-region: ${{ inputs.region }}
+          role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
+          role-duration-seconds: 1800
+          role-session-name: GitActionDeploymentSession
+
+      - name: Prerequisite Installation
+        run: npm install -g aws-cdk esbuild
+      - name: Check cdk synth
         run: |
+          cd cdk;
           chmod 700 synth.sh
           ./synth.sh
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
