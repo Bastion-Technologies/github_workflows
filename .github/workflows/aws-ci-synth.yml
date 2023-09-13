@@ -39,15 +39,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
           registry-url: https://npm.pkg.github.com/
-      - name: Restore Build
-        uses: actions/cache/restore@v3
-        id: restore-cache
-        with:
-          key: cache-${{ hashFiles('package-lock.json') }}
-          path: "**/node_modules/**"
-
       - name: install dependencies
-        if: steps.restore-cache.outputs.cache-hit != 'true'
         run: |
           if [ -f "install.sh" ]
             then
@@ -61,12 +53,10 @@ jobs:
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: actions/cache/save@v3
-        if: steps.restore-cache.outputs.cache-hit != 'true'
         with:
           path: "**/node_modules/**"
-          key: cache-${{ hashFiles('package-lock.json') }}
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
 
   typescript-check:
     name: Typescript checking
@@ -82,7 +72,7 @@ jobs:
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
-          key: cache-${{ hashFiles('package-lock.json') }}
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
       - name: Typescript checking
         run: |
@@ -101,7 +91,7 @@ jobs:
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
-          key: cache-${{ hashFiles('package-lock.json') }}
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
       - name: Linter checking
         run: |
@@ -120,7 +110,7 @@ jobs:
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
-          key: cache-${{ hashFiles('package-lock.json') }}
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
       - name: Run unit tests
         run: |
@@ -139,7 +129,7 @@ jobs:
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
-          key: cache-${{ hashFiles('package-lock.json') }}
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
