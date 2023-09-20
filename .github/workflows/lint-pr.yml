@@ -2,9 +2,6 @@ name: Lint PR
 
 on: workflow_call
 
-permissions:
-  pull-requests: write
-
 jobs:
   lint_pr_title:
 
