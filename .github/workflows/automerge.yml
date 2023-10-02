@@ -1,7 +1,6 @@
 name: Auto-Merge
 on:
-  pull_request:
-    types: [opened, reopened]
+  workflow_call:
 
 jobs:
   enable-auto-merge:
