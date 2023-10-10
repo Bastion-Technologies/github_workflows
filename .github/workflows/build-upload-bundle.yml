@@ -1,0 +1,110 @@
+name: Build and upload bundles
+
+on:
+    workflow_call:
+        inputs:
+            region:
+                required: true
+                type: string
+            repo-name:
+                required: true
+                type: string
+            version:
+                required: true
+                type: string
+            notify-slack:
+                required: false
+                type: boolean
+        secrets:
+            AWS_CICD_ROLE:
+                required: true
+            AWS_CICD_ACCESS_KEY:
+                required: true
+            AWS_CICD_SECRET_KEY:
+                required: true
+            SLACK_WEBHOOK:
+                required: false
+
+jobs:
+    deploy:
+        defaults:
+            run:
+                working-directory: ./cdk
+
+        name: Build
+
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        if: ${{ github.actor != 'dependabot[bot]' }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Setup NodeJS
+              uses: actions/setup-node@v3
+              with:
+                  node-version: "18"
+                  cache: "npm"
+                  cache-dependency-path: "**/package-lock.json"
+                  registry-url: https://npm.pkg.github.com/
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+                  aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+                  aws-region: ${{ inputs.region }}
+                  role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
+                  role-duration-seconds: 1800
+                  role-session-name: GitActionDeploymentSession
+
+            - name: Prerequisite Installation
+              run: npm install -g aws-cdk esbuild
+
+            - name: install dependencies
+              run: |
+                  if [ -f "install.sh" ]
+                    then
+                        echo "install.sh script found! running it";
+                        chmod 700 install.sh
+                        ./install.sh
+                    else
+                       echo "install.sh script NOT found! running `npm ci`";
+                       cd ..;
+                       npm ci;
+                  fi
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: run tests
+              run: |
+                  if [ -f "test.sh" ]
+                    then
+                        echo "test.sh script found! running it";
+                        chmod 700 test.sh
+                        ./test.sh
+                    else
+                       echo "test.sh script NOT found!"
+                       cd ..;
+                  fi
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Build
+              run: |
+                  chmod 700 build.sh
+                  ./build.sh
+              env:
+                  GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Upload
+              run: aws s3 cp ./build/ s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
+            # - name: Slack Notification
+            #   if: "${{ failure() }}"
+            #   uses: rtCamp/action-slack-notify@v2
+            #   env:
+            #     SLACK_CHANNEL: github-cis
+            #     SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+            #     SLACK_ICON: https://github.com/rtCamp.png?size=48
+            #     SLACK_MESSAGE: ":spongebobbing:"
+            #     SLACK_TITLE: ":spongebobbing: ${{ github.repository }} :rocket:"
+            #     SLACK_USERNAME: "Bob"
+            #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
