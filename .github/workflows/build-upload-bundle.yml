@@ -95,7 +95,7 @@ jobs:
                   GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Upload
-              run: aws s3 cp ${{ inputs.bundle-path }} / s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
+              run: aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
             # - name: Slack Notification
             #   if: "${{ failure() }}"
             #   uses: rtCamp/action-slack-notify@v2
