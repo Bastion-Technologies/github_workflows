@@ -93,7 +93,9 @@ jobs:
                   role-duration-seconds: 1800
                   role-session-name: GitActionDeploymentSession
             - name: Upload
-              run: aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
+              run: |
+                echo '$(pwd)';
+                aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
             # - name: Slack Notification
             #   if: "${{ failure() }}"
             #   uses: rtCamp/action-slack-notify@v2
