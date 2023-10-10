@@ -107,14 +107,14 @@ jobs:
               run: |
                 echo $(pwd);
                 aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }} --recursive
-            # - name: Slack Notification
-            #   if: "${{ failure() }}"
-            #   uses: rtCamp/action-slack-notify@v2
-            #   env:
-            #     SLACK_CHANNEL: github-cis
-            #     SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-            #     SLACK_ICON: https://github.com/rtCamp.png?size=48
-            #     SLACK_MESSAGE: ":spongebobbing:"
-            #     SLACK_TITLE: ":spongebobbing: ${{ github.repository }} :rocket:"
-            #     SLACK_USERNAME: "Bob"
-            #     SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+            - name: Slack Notification
+              if: "${{ failure() }}"
+              uses: rtCamp/action-slack-notify@v2
+              env:
+                SLACK_CHANNEL: github-cis
+                SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
+                SLACK_ICON: https://github.com/rtCamp.png?size=48
+                SLACK_MESSAGE: ":spongebobbing:"
+                SLACK_TITLE: ":spongebobbing: ${{ github.repository }} :rocket:"
+                SLACK_USERNAME: "Bob"
+                SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
