@@ -21,6 +21,10 @@ on:
         secrets:
             AWS_DEV_ROLE:
                 required: true
+            AWS_STAGING_ROLE:
+                required: true
+            AWS_PROD_ROLE:
+                required: true
             AWS_CICD_ROLE:
                 required: true
             AWS_CICD_ACCESS_KEY:
@@ -37,6 +41,10 @@ jobs:
             include:
               - environment: dev
                 build_secret: AWS_DEV_ROLE
+              - environment: staging
+                build_secret: AWS_STAGING_ROLE
+              - environment: prod
+                build_secret: AWS_PROD_ROLE
         defaults:
             run:
                 working-directory: ./cdk
