@@ -90,7 +90,7 @@ jobs:
             - name: Build
               run: |
                   chmod 700 build.sh
-                  ./build.sh
+                  ./build.sh dev
               env:
                   GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
