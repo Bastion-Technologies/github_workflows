@@ -30,13 +30,9 @@ jobs:
         defaults:
             run:
                 working-directory: ./cdk
-
         name: Build
-
         runs-on: ubuntu-latest
         timeout-minutes: 30
-        if: ${{ github.actor != 'dependabot[bot]' }}
-
         steps:
             - name: Checkout
               uses: actions/checkout@v3
@@ -97,6 +93,8 @@ jobs:
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Upload
               run: aws s3 cp ./build/ s3://bastion-bundles/test/${{ inputs.repo-name }}/${{ inputs.version }} --recursive
+              with: 
+                working-directory: ./cdk
             # - name: Slack Notification
             #   if: "${{ failure() }}"
             #   uses: rtCamp/action-slack-notify@v2
