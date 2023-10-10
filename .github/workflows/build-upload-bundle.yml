@@ -12,14 +12,14 @@ on:
             repo-name:
                 required: true
                 type: string
-            version:
+            tag-version:
                 required: true
                 type: string
             notify-slack:
                 required: false
                 type: boolean
         secrets:
-            AWS_BUILD_ROLE:
+            AWS_DEV_ROLE:
                 required: true
             AWS_CICD_ROLE:
                 required: true
@@ -32,6 +32,11 @@ on:
 
 jobs:
     deploy:
+        strategy:
+          matrix:
+            include:
+              - environment: dev
+                build_secret: AWS_DEV_ROLE
         defaults:
             run:
                 working-directory: ./cdk
@@ -48,17 +53,6 @@ jobs:
                   cache: "npm"
                   cache-dependency-path: "**/package-lock.json"
                   registry-url: https://npm.pkg.github.com/
-
-            - name: Configure AWS credentials for build
-              uses: aws-actions/configure-aws-credentials@v2
-              with:
-                  aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
-                  aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
-                  aws-region: ${{ inputs.region }}
-                  role-to-assume: ${{ secrets.AWS_BUILD_ROLE }}
-                  role-duration-seconds: 1800
-                  role-session-name: GitActionDeploymentSession
-
             - name: Prerequisite Installation
               run: npm install -g aws-cdk esbuild
 
@@ -76,10 +70,19 @@ jobs:
                   fi
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            - name: Configure AWS credentials for build
+              uses: aws-actions/configure-aws-credentials@v2
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+                  aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+                  aws-region: ${{ inputs.region }}
+                  role-to-assume: ${{ secrets[matrix.build_secret] }}
+                  role-duration-seconds: 1800
+                  role-session-name: GitActionDeploymentSession
             - name: Build
               run: |
                   chmod 700 build.sh
-                  ./build.sh dev
+                  ./build.sh ${{ matrix.environment }};
               env:
                   GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
