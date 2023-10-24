@@ -1,0 +1,103 @@
+name: Cherry-pick
+
+on:
+  workflow_call:
+    inputs:
+      prNumber:
+        type: string
+        description: Pull request number to cherry-pick
+        required: true
+      tags:
+        type: string
+        description: Which tags to cherry-pick on
+        required: true
+
+jobs:
+  cherry-pick:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Test cherry-pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "-- Git Infos --"
+          git --version
+
+          git config --global user.email ""
+          git config --global user.name "Nautilus"
+          
+          git fetch --all > /dev/null
+
+          echo -e "\n-- Inputs --"
+          prNumber=${{ github.event.inputs.prNumber }}
+          prInfos=$(gh pr view $prNumber --json mergeCommit,title,body)
+          commitToMerge=$(echo $prInfos | jq -r '.mergeCommit.oid')   
+          prTitle=$(echo $prInfos | jq -r '.title')
+          prBody=$(echo $prInfos | jq -r '.body')
+
+          echo "PR Number is $prNumber"
+          echo "PR Title is $prTitle"
+          echo "Commit is $commitToMerge"
+
+          if [ -z "$commitToMerge" ] || [ "$commitToMerge" = "null" ]; then
+            echo "Merge commit is empty, exiting"
+            exit 1
+          fi
+
+          echo -e "\n ---------------------------------"
+          echo -e "==== Starting cherry-pick ===="
+
+          for tag in $(echo "${{ github.event.inputs.tags }}" | tr ',' '\n'); do
+            targetBranch="release/$tag"
+            cherryPickBranch="cherry-pick/$tag-$prNumber"
+
+            echo -e "\n-- Trying to cherry-pick commit $commitToMerge in branch $targetBranch --"
+            echo "- Checkout $targetBranch"
+            git checkout $targetBranch && ret=$? || ret=$?
+            
+            if [ $ret -ne 0 ]; then
+              echo "Branch $targetBranch does not exist, skipping"
+              continue
+            fi
+
+            echo "- Creating a cherry-pick branch"
+            git checkout -b $cherryPickBranch
+            git pull origin $cherryPickBranch > /dev/null 2>&1 || true
+
+            commitMessage=$(git log -n 1 --pretty=format:%s $commitToMerge)
+
+            echo "- Cherry picking"
+            git cherry-pick -m 1 --allow-empty --strategy-option theirs --no-commit $commitToMerge && conflict=$? || conflict=$?
+
+            if [ $conflict -ne 0 ]; then
+              echo "- Cherry-pick failed, commiting anyway"
+            fi
+
+            status=$ret
+            while [ $status -ne 128 ]; do
+              echo "- Commiting"
+              git commit --allow-empty -am "$commitMessage"
+              git cherry-pick --continue > /dev/null 2>&1 && status=$? || status=$?
+            done
+
+
+            echo "- Pushing changes"
+            git push --set-upstream --no-verify origin $cherryPickBranch
+
+            echo "- Opening pull request"
+            newPrTitle="[🐚/Cherrypick #$prNumber on $tag] $prTitle"
+            newPrBody="### Cherrypicking #${prNumber} on $tag\n-------------\n$prBody"
+
+            if [ $conflict -ne 0 ]; then
+              newPrTitle="[⚠️CONFLICTS⚠️]$newPrTitle"
+              newPrBody="⚠️ **This PR has conflicts, please resolve them** ⚠️\n$newPrBody"
+            fi
+
+            echo -e "$newPrBody" | gh pr create --title "$newPrTitle" --base $targetBranch --head $cherryPickBranch -F -
+          done
