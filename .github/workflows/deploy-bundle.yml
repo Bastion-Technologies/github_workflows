@@ -80,7 +80,7 @@ jobs:
           run: npm install -g aws-cdk
         - name: Retrieve bundle
           run: |
-              aws s3 cp s3://bastion-bundles/${{ github.repository }}/${{ inputs.tag-version }} ./bundle --recursive
+              aws s3 cp s3://bastion-bundles/${{ github.repository }}/${{ inputs.tag-version }}/${{ inputs.env }} ./bundle --recursive
         - name: CDK Diff from artifacts
           uses: youyo/aws-cdk-github-actions@v2
           with:
@@ -88,6 +88,7 @@ jobs:
             working_directory: ./bundle
             cdk_stack: ${{ inputs.stack }}
             cdk_args: --require-approval never --app 'cdk.out/'
+
         - name: Slack Notification
           if: "${{ failure() && inputs.notify-slack }}"
           uses: rtCamp/action-slack-notify@v2
