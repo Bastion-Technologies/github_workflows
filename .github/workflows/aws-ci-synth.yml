@@ -18,16 +18,21 @@ on:
         required: true
 
 jobs:
+  # sast:
+  #   name: SAST Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Run Report
+  #       id: report
+  #       uses: bearer/bearer-action@v2
+  #       with:
+  #         diff: true
+
   sast:
-    name: SAST Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run Report
-        id: report
-        uses: bearer/bearer-action@v2
-        with:
-          diff: true
+    name: SAST
+    uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
+        
   build:
     defaults:
       run:
