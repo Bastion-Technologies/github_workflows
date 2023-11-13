@@ -30,7 +30,7 @@ jobs:
   #         diff: true
 
   sast:
-    name: SAST Check
+    name: SAST
     uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
         
   build:
