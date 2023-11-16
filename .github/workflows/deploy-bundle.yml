@@ -9,9 +9,6 @@ on:
             environment:
                 required: true
                 type: string
-            stack:
-                required: true
-                type: string
             notify-slack:
                 required: false
                 type: boolean
@@ -86,8 +83,7 @@ jobs:
           with:
             cdk_subcommand: diff
             working_directory: ./bundle
-            cdk_stack: ${{ inputs.stack }}
-            cdk_args: --require-approval never --app 'cdk.out/'
+            cdk_args: --require-approval never --app 'cdk.out/' --all
 
         - name: Slack Notification
           if: "${{ failure() && inputs.notify-slack }}"
@@ -97,6 +93,6 @@ jobs:
             SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
             SLACK_ICON: https://github.com/rtCamp.png?size=48
             SLACK_MESSAGE: ":spongebobbing:"
-            SLACK_TITLE: ":spongebobbing: ${{ github.repository }} ${{ inputs.stack }}@${{ inputs.tag-version }} deployed :rocket:"
+            SLACK_TITLE: ":spongebobbing: ${{ github.repository }}@${{ inputs.tag-version }} deployed :rocket:"
             SLACK_USERNAME: "Bob"
             SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
