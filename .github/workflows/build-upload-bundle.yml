@@ -110,7 +110,7 @@ jobs:
             - name: Upload
               run: |
                 echo $(pwd);
-                aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }}  --exclude '*/node_modules/*' --recursive
+                aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }}  --exclude '*/node_modules/*' --no-follow-symlinks --recursive
             - name: Slack Notification
               if: "${{ failure() }}"
               uses: rtCamp/action-slack-notify@v2
