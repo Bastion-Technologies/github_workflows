@@ -5,6 +5,9 @@ on:
       PROJECT_ID:
         required: true
         type: string
+      pathPattern:
+        required: true
+        type: string
     secrets:
       LOKALISE_API_TOKEN:
         required: true
@@ -35,7 +38,7 @@ jobs:
              done < <(
              if [ -z ${{ env.GITHUB_CURRENT_COMMIT }} ]
              then
-              git ls-files -- 'backend/*/static_data/*/${{ env.ENV_LOKALISE_SOURCE_LANG_ISO }}.json'
+              git ls-files -- '${{ inputs.pathPattern }}'
              else
-              git diff --name-only ${{ env.GITHUB_PREVIOUS_COMMIT }} ${{ env.GITHUB_CURRENT_COMMIT }} -- 'backend/*/static_data/*/${{ env.ENV_LOKALISE_SOURCE_LANG_ISO }}.json'
+              git diff --name-only ${{ env.GITHUB_PREVIOUS_COMMIT }} ${{ env.GITHUB_CURRENT_COMMIT }} -- '${{ inputs.pathPattern }}'
              fi | awk NF)
