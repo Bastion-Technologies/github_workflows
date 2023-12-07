@@ -26,6 +26,7 @@ jobs:
         env: 
           VAR_LOKALISE_API_TOKEN: ${{ secrets.LOKALISE_API_TOKEN }}
           VAR_LOKALISE_PROJECT_ID: ${{ inputs.PROJECT_ID }}
+          VAR_BRANCH_NAME: 'lokalise/translation-udpate'
         run: |
              ./bin/lokalise2 --token ${{ env.VAR_LOKALISE_API_TOKEN }} --project-id ${{ env.VAR_LOKALISE_PROJECT_ID }} file download --json-unescaped-slashes --format json --original-filenames=true --directory-prefix=/
       - name: Commit
@@ -34,7 +35,7 @@ jobs:
         run: |
             git config --global user.name "${GITHUB_ACTOR}"
             git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-            git checkout -b lokalise/translation-update
+            git checkout -b ${{ env.VAR_BRANCH_NAME }}
             # add newlines remove by lokalised but added by prettier
             diff --name-only | xargs -I{} sed -i -e '$a\' {}
             git add ${{ inputs.pathPattern }}
@@ -43,6 +44,6 @@ jobs:
                 echo "No changes"
             else
                 git commit -m 'chore: Lokalise translations update'
-                git push origin lokalise/translation-update
-                gh pr create -B main -H lokalise/translation-update --title 'chore: Lokalise translations update' --body 'Automatically created by Github action'
+                git push origin ${{ env.VAR_BRANCH_NAME }} --force
+                gh pr view ${{ env.VAR_BRANCH_NAME }} && gh pr reopen ${{ env.VAR_BRANCH_NAME }} || gh pr create --fill -B main -H ${{ env.VAR_BRANCH_NAME }} --title 'chore: Lokalise translations' --body 'Automatically created by Github action'
             fi
