@@ -35,9 +35,8 @@ jobs:
             git config --global user.name "${GITHUB_ACTOR}"
             git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
             git checkout -b lokalise/translation-update
-            git add ${{ inputs.pathPattern }}
             # add newlines remove by lokalised but added by prettier
-            diff --cached --name-only | xargs -I{} sed -i -e '$a\' {}
+            diff --name-only | xargs -I{} sed -i -e '$a\' {}
             git add ${{ inputs.pathPattern }}
             if [[ -z $(git status --untracked-files=no --porcelain) ]]
             then
