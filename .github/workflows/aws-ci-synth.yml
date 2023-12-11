@@ -129,7 +129,7 @@ jobs:
           path: "**/node_modules/**"
       - id: set-matrix
         run: |
-          WORKSPACES=$(npm query .workspace | jq -r '.[].location')
+          WORKSPACES=$(npm query .workspace | jq -r '.[].location' | jq --raw-input --slurp 'split("\n")')
           echo 'found workspaces: '$WORKSPACES
           echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
   test-check:
