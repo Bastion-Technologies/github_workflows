@@ -112,14 +112,26 @@ jobs:
       - name: Linter checking
         run: |
           npm run lint --workspaces --if-present;
+  list-workspaces:
+    name: List workspaces
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps: 
+      - name: Checkout
+        uses: actions/checkout@v3
+      - id: set-matrix
+        run: echo "matrix="$(npm query .workspace | jq -r '.[].location') >> $GITHUB_OUTPUT
   test-check:
     name: Run unit tests
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: [build]
-
+    strategy:
+      matrix:
+        workspace: ${{ fromJSON(needs.list-workspaces.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -130,17 +142,15 @@ jobs:
           path: "**/node_modules/**"
       - name: Run unit tests
         run: |
-          npm test;
+          npm test -- ${{ matrix.workspace }};
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
   synth-check:
     name: CDK Synth
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: [build]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
