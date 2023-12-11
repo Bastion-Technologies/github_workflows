@@ -122,7 +122,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - id: set-matrix
-        run: echo "matrix="$(npm query .workspace | jq -r '.[].location') >> $GITHUB_OUTPUT
+        run: |
+          WORKSPACES=$(npm query .workspace | jq -r '.[].location')
+          echo 'found workspaces: '$WORKSPACES
+          echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
   test-check:
     name: Run unit tests
     runs-on: ubuntu-latest
