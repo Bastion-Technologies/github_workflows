@@ -121,6 +121,13 @@ jobs:
     steps: 
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Setup NodeJS
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: "**/package-lock.json"
+          registry-url: https://npm.pkg.github.com/
       - id: set-matrix
         run: |
           WORKSPACES=$(npm query .workspace | jq -r '.[].location')
