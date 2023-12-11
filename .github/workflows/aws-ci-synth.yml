@@ -200,3 +200,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: [build,typescript-check,linter-check,test-check,synth-check]
+    steps:
+      - name: echo
+        run: echo 'Finished :)'
