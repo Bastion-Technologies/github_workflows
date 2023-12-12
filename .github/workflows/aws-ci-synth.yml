@@ -32,7 +32,7 @@ jobs:
   sast:
     name: SAST
     uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
-        
+
   build:
     defaults:
       run:
@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
@@ -119,7 +119,7 @@ jobs:
     needs: [build]
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps: 
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Restore Build
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build,list-workspaces]
+    needs: [build, list-workspaces]
     strategy:
       matrix:
         workspace: ${{ fromJSON(needs.list-workspaces.outputs.matrix) }}
@@ -169,7 +169,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
@@ -199,7 +199,23 @@ jobs:
     name: Final check
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build,typescript-check,linter-check,test-check,synth-check]
+    needs: [build, typescript-check, linter-check, test-check, synth-check]
     steps:
       - name: echo
-        run: echo 'Finished :)'
+        run: |
+          if [[ "${{ needs.build.result }}" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.typescript-check.result }}" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.linter-check.result }}" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.test-check.result }}" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.synth-check.result }}" != "success" ]]; then
+            exit 1
+          fi
+          echo 'Finished :)'
