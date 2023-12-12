@@ -94,7 +94,7 @@ jobs:
         run: |
           npm run compile --workspaces --if-present;
           if [ $? -ne 0 ]; then
-            echo "::set-output name=check_failed::true"
+            echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
           fi
   linter-check:
     name: Linter checking
@@ -116,7 +116,7 @@ jobs:
         run: |
           npm run lint --workspaces --if-present;
           if [ $? -ne 0 ]; then
-            echo "::set-output name=check_failed::true"
+            echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
           fi
   list-workspaces:
     name: List workspaces
@@ -159,7 +159,7 @@ jobs:
         run: |
           npm test -- ${{ matrix.workspace }} --passWithNoTests;
           if [ $? -ne 0 ]; then
-           echo "::set-output name=check_failed::true"
+            echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
           fi
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
@@ -202,7 +202,7 @@ jobs:
           chmod 700 synth.sh
           ./synth.sh
           if [ $? -ne 0 ]; then
-            echo "::set-output name=check_failed::true"
+            echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
           fi
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
