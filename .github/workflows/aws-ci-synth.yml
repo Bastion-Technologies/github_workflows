@@ -209,18 +209,21 @@ jobs:
     name: Final check
     runs-on: ubuntu-latest
     if: always()
-    needs: [build, typescript-check
-    # , linter-check, test-check, synth-check
+    needs: [build, typescript-check, linter-check, test-check, 
+    # synth-check
     ]
     steps:
       - name: echo
         env: 
           NEEDS: ${{ toJSON(needs) }} 
         run: |
-          if [[ "${{ needs.typescript-check.outputs.check_failed }}" == "true" ]]; then
-            exit 1
-          fi
           printf '%s\n' "$NEEDS" > foo.json
           cat foo.json
+          if [[ "${{ needs.typescript-check.result }}" != "success" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.test-check.result }}" != "success" ]]; then
+            exit 1
+          fi
           echo 'Finished :)'
 
