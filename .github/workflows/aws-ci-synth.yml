@@ -216,14 +216,11 @@ jobs:
       - name: echo
         env: 
           NEEDS: ${{ toJSON(needs) }} 
-          JOBS: ${{ toJSON(jobs) }} 
         run: |
           if [[ "${{ needs.typescript-check.outputs.check_failed }}" == "true" ]]; then
             exit 1
           fi
           printf '%s\n' "$NEEDS" > foo.json
           cat foo.json
-          printf '%s\n' "$JOBS" > bar.json
-          cat bar.json
           echo 'Finished :)'
 
