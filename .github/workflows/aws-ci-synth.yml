@@ -93,9 +93,7 @@ jobs:
       - name: Typescript checking
         run: |
           npm run compile --workspaces --if-present;
-          if [ $? -ne 0 ]; then
-            echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
-          fi
+          echo "{check_failed}={true}" >> "$GITHUB_OUTPUT"
   linter-check:
     name: Linter checking
 
