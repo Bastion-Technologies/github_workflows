@@ -32,7 +32,7 @@ jobs:
   sast:
     name: SAST
     uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
-        
+
   build:
     defaults:
       run:
@@ -47,7 +47,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        
+
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
@@ -93,6 +93,9 @@ jobs:
       - name: Typescript checking
         run: |
           npm run compile --workspaces --if-present;
+          if [ $? -ne 0 ]; then
+            echo "::set-output name=check_failed::true"
+          fi
   linter-check:
     name: Linter checking
 
@@ -112,6 +115,9 @@ jobs:
       - name: Linter checking
         run: |
           npm run lint --workspaces --if-present;
+          if [ $? -ne 0 ]; then
+            echo "::set-output name=check_failed::true"
+          fi
   list-workspaces:
     name: List workspaces
     runs-on: ubuntu-latest
@@ -119,7 +125,7 @@ jobs:
     needs: [build]
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps: 
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Restore Build
@@ -137,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build,list-workspaces]
+    needs: [build, list-workspaces]
     strategy:
       matrix:
         workspace: ${{ fromJSON(needs.list-workspaces.outputs.matrix) }}
@@ -152,6 +158,9 @@ jobs:
       - name: Run unit tests
         run: |
           npm test -- ${{ matrix.workspace }} --passWithNoTests;
+          if [ $? -ne 0 ]; then
+           echo "::set-output name=check_failed::true"
+          fi
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
   synth-check:
@@ -169,7 +178,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
@@ -192,14 +201,30 @@ jobs:
           cd cdk;
           chmod 700 synth.sh
           ./synth.sh
+          if [ $? -ne 0 ]; then
+            echo "::set-output name=check_failed::true"
+          fi
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   final-check:
     name: Final check
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build,typescript-check,linter-check,test-check,synth-check]
+    if: always()
+    needs: [build, typescript-check, linter-check, test-check, synth-check]
     steps:
       - name: echo
-        run: echo 'Finished :)'
+        run: |
+          if [[ "${{ needs.typescript-check.outputs.check_failed }}" == "true" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.linter-check.outputs.check_failed }}" == "true" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.test-check.outputs.check_failed }}" == "true" ]]; then
+            exit 1
+          fi
+          if [[ "${{ needs.synth-check.outputs.check_failed }}" == "true" ]]; then
+            exit 1
+          fi
+          echo 'Finished :)'
