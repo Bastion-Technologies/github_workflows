@@ -198,7 +198,7 @@ jobs:
   final-check:
     name: Final check
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: always()
     needs: [build, typescript-check, linter-check, test-check, synth-check]
     steps:
       - name: echo
