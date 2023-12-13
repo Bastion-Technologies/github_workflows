@@ -12,6 +12,9 @@ on:
             tag-version:
                 required: true
                 type: string
+            ref:
+                required: false
+                type: string
             working-directory:
                 required: false
                 type: string
@@ -19,6 +22,7 @@ on:
             notify-slack:
                 required: false
                 type: boolean
+                default: true
         secrets:
             AWS_DEV_ROLE:
                 required: true
@@ -58,6 +62,8 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.inputs.ref }}
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
@@ -115,14 +121,20 @@ jobs:
               run: |
                 echo $(pwd);
                 aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }} --no-follow-symlinks --recursive
-            - name: Slack Notification
-              if: "${{ failure() }}"
+
+            - name: Set Slack Webhook name
+              id: slack-webhook-name
+              run: |
+                  ENVIRONMENT=${{ matrix.environment }}
+                  echo "SLACK_WEBHOOK_NAME=SLACK_WEBHOOK_${ENVIRONMENT^^}" >> "$GITHUB_ENV"
+            - name: Slack Notification - Failure
+              if: "${{ failure() && inputs.notify-slack }}"
               uses: rtCamp/action-slack-notify@v2
               env:
-                SLACK_CHANNEL: github-cis
-                SLACK_COLOR: ${{ job.status }} # or a specific color like 'good' or '#ff00ff'
-                SLACK_ICON: https://github.com/rtCamp.png?size=48
-                SLACK_MESSAGE: ":spongebobbing:"
-                SLACK_TITLE: ":spongebobbing: ${{ github.repository }} :rocket:"
-                SLACK_USERNAME: "Bob"
-                SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+                SLACK_ICON: https://avatars.githubusercontent.com/u/138620007?size=96
+                SLACK_TITLE: "Bundling Failed"
+                SLACK_MESSAGE: ":sad_nautilus: Bundling of ${{ inputs.repo-name }}@${{ inputs.tag-version }} in ${{ matrix.environment }} failed"
+                SLACK_USERNAME: "Nautilus"
+                MSG_MINIMAL: actions url
+                SLACK_COLOR: ${{ job.status }}
+                SLACK_WEBHOOK: ${{ secrets[env.SLACK_WEBHOOK_NAME] }}
