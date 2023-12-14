@@ -122,6 +122,9 @@ jobs:
                 echo $(pwd);
                 aws s3 cp ${{ inputs.bundle-path }} s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }} --no-follow-symlinks --recursive
 
+                touch ./success.txt;
+                aws s3 cp ./success.txt s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }}/success.txt
+
             - name: Set Slack Webhook name
               id: slack-webhook-name
               run: |
