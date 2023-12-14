@@ -12,9 +12,6 @@ on:
             tag-version:
                 required: true
                 type: string
-            ref:
-                required: false
-                type: string
             working-directory:
                 required: false
                 type: string
@@ -63,7 +60,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v3
               with:
-                  ref: ${{ github.event.inputs.ref }}
+                  ref: ${{ inputs.tag-version }}
             - name: Set up QEMU
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
