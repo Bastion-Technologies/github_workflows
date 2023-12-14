@@ -203,19 +203,19 @@ jobs:
     steps:
       - name: echo
         run: |
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
             exit 1
           fi
-          if [[ "${{ needs.typescript-check.result }}" != "success" ]]; then
+          if [[ "${{ needs.typescript-check.result }}" == "failure" ]]; then
             exit 1
           fi
-          if [[ "${{ needs.linter-check.result }}" != "success" ]]; then
+          if [[ "${{ needs.linter-check.result }}" == "failure" ]]; then
             exit 1
           fi
-          if [[ "${{ needs.test-check.result }}" != "success" ]]; then
+          if [[ "${{ needs.test-check.result }}" == "failure" ]]; then
             exit 1
           fi
-          if [[ "${{ needs.synth-check.result }}" != "success" ]]; then
+          if [[ "${{ needs.synth-check.result }}" == "failure" ]]; then
             exit 1
           fi
           echo 'Finished :)'
