@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      API: ${{ github.event.inputs.api || 'api' }}
+      API: ${{ inputs.api || 'api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -27,9 +27,9 @@ jobs:
       - name: Run upgrade
         id: upgrade
         run: |
-          SCRIPT=${{ github.event.inputs.api && format('upgrade-api:{0}', github.event.inputs.api) || 'upgrade-api' }}
+          SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
           VERSION=$(npm run $SCRIPT patch --silent)
-          echo "Upgraded ${{ github.event.inputs.api || 'api' }} to version $VERSION"
+          echo "Upgraded ${{ env.API }} to version $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
