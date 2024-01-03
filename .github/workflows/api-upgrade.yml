@@ -28,7 +28,8 @@ jobs:
         id: upgrade
         run: |
           SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
-          VERSION=$(npm run $SCRIPT patch --silent)
+          echo "Running $SCRIPT"
+          VERSION=$(npm run $SCRIPT patch --silent | tail -n 1)
           echo "Upgraded ${{ env.API }} to version $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create pull request
