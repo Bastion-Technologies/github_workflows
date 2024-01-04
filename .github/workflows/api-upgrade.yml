@@ -24,12 +24,24 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Set up package.json path
+        id: package
+        run: |
+          if [ ${{ inputs.api }} ]; then
+            path=$(npm exec -w=@bastion-technologies/${{ inputs.api }} --call 'pwd')/package.json
+          else
+            path=$(pwd)/package.json
+          fi
+
+          echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Run upgrade
         id: upgrade
         run: |
           SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
           echo "Running $SCRIPT"
-          VERSION=$(npm run $SCRIPT patch --silent | tail -n 1)
+          npm run $SCRIPT patch --silent
+
+          $VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
           echo "Upgraded ${{ env.API }} to version $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create pull request
