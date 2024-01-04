@@ -46,6 +46,8 @@ jobs:
     needs: should-publish
     if: needs.should-publish.outputs.isdiff == 'yes'
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
