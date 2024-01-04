@@ -21,8 +21,6 @@ on:
                 type: boolean
                 default: true
         secrets:
-            AWS_DEV_ROLE:
-                required: true
             AWS_STAGING_ROLE:
                 required: true
             AWS_PROD_ROLE:
@@ -41,9 +39,6 @@ jobs:
         strategy:
           matrix:
             include:
-              - environment: dev
-                build_secret: AWS_DEV_ROLE
-                region: us-east-1
               - environment: staging
                 build_secret: AWS_STAGING_ROLE
                 region: us-east-1
