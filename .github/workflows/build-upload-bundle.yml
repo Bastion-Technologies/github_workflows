@@ -121,6 +121,7 @@ jobs:
                 aws s3 cp ./success.txt s3://bastion-bundles/${{ inputs.repo-name }}/${{ inputs.tag-version }}/${{ matrix.environment }}/success.txt
 
             - name: Set Slack Webhook name
+              if: "${{ failure() && inputs.notify-slack }}"
               id: slack-webhook-name
               run: |
                   ENVIRONMENT=${{ matrix.environment }}
