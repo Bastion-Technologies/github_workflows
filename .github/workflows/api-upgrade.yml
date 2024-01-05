@@ -7,6 +7,10 @@ on:
         type: string
         description: "API to upgrade"
         required: false
+      workspace:
+        type: string
+        description: "Workspace name of the API"
+        required: false
 
 permissions:
   pull-requests: write
@@ -27,8 +31,8 @@ jobs:
       - name: Set up package.json path
         id: package
         run: |
-          if [ ${{ inputs.api }} ]; then
-            path=$(npm exec -w=@bastion-technologies/${{ inputs.api }} --call 'pwd')/package.json
+          if [ ${{ inputs.workspace || inputs.api }} ]; then
+            path=$(npm exec -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} --call 'pwd')/package.json
           else
             path=$(pwd)/package.json
           fi
