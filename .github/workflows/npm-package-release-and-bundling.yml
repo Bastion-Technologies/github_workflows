@@ -25,21 +25,15 @@ jobs:
       package-json-dir-path: ${{ inputs.package-json-dir-path }}
 
   trigger-bundling:
+    needs: release-api
+    if: needs.release-api.outputs.isdiff == 'yes'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-      - name: get-npm-version
-        id: package-version
-        uses: martinbeentjes/npm-get-version-action@v1.3.1
-        with:
-          path: '${{ inputs.package-json-dir-path }}'
       - name: Call tag-bundle-to-s3
         uses: actions/github-script@v5
         with:
           script: |
-            const tagName = "${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}"
+            const tagName = "${{ inputs.library-name }}-${{ needs.release-api.outputs.version }}"
             github.rest.actions.createWorkflowDispatch({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
