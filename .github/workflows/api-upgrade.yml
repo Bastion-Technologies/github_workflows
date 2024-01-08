@@ -45,7 +45,7 @@ jobs:
           echo "Running $SCRIPT"
           npm run $SCRIPT patch --silent
 
-          $VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
+          VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
           echo "Upgraded ${{ env.API }} to version $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Create pull request
