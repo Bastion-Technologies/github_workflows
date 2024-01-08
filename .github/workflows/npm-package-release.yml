@@ -46,8 +46,6 @@ jobs:
     needs: should-publish
     if: needs.should-publish.outputs.isdiff == 'yes'
     runs-on: ubuntu-latest
-    permissions:
-      actions: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -77,16 +75,3 @@ jobs:
               ref: 'refs/tags/${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}',
               sha: context.sha
             })
-
-      - name: Call tag-bundle-to-s3
-        uses: actions/github-script@v5
-        with:
-            script: |
-                const tagName = "${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}"
-
-                github.rest.actions.createWorkflowDispatch({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    workflow_id: 'tag-bundle-to-s3.yml',
-                    ref: tagName
-                })
