@@ -9,6 +9,13 @@ on:
       package-json-dir-path:
         required: true
         type: string
+    outputs:
+      isdiff:
+        description: "If the version changed"
+        value: ${{ jobs.should-publish.outputs.isdiff }}
+      version:
+        description: "The version of the package that was published"
+        value: ${{ jobs.publish-npm.outputs.version }}
 
 jobs:
   should-publish:
@@ -46,6 +53,8 @@ jobs:
     needs: should-publish
     if: needs.should-publish.outputs.isdiff == 'yes'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }}
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
