@@ -1,0 +1,48 @@
+name: Release NPM library on GHP and triggers bundling & upload to S3
+
+on:
+  workflow_call:
+    inputs:
+      library-name:
+        required: true
+        type: string
+      package-json-dir-path:
+        required: true
+        type: string
+
+
+permissions:
+  actions: write
+  packages: write
+
+jobs:
+  release-api:
+    uses: Bastion-Technologies/github_workflows/.github/workflows/npm-package-release.yml@main
+    name: Release API
+    secrets: inherit
+    with:
+      library-name: ${{ inputs.library-name }}
+      package-json-dir-path: ${{ inputs.package-json-dir-path }}
+
+  trigger-bundling:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+        with:
+          path: '${{ inputs.package-json-dir-path }}'
+      - name: Call tag-bundle-to-s3
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const tagName = "${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}"
+            github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'tag-bundle-to-s3.yml',
+                ref: tagName
+            })
