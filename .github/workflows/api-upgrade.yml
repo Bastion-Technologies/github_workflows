@@ -43,7 +43,7 @@ jobs:
         run: |
           SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
           echo "Running $SCRIPT"
-          npm run $SCRIPT patch --silent
+          npm run $SCRIPT patch
 
           VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
           echo "Upgraded ${{ env.API }} to version $VERSION"
