@@ -39,7 +39,18 @@ jobs:
           fi
 
           echo "path=$path" >> "$GITHUB_OUTPUT"
+      - name: Should upgrade
+        id: should_upgrade
+        run: |
+          CURRENT_VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
+          echo "Current version is $CURRENT_VERSION"
+
+          TAG=${{ inputs.api && format('{0}-', inputs.api) || '' }}$CURRENT_VERSION
+
+          git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
+          echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
       - name: Run upgrade
+        if: steps.should_upgrade.outputs.isDiff == 1
         id: upgrade
         run: |
           SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
@@ -52,6 +63,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
       - name: Create pull request
+        if: steps.should_upgrade.outputs.isDiff == 1
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: "chore: Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}"
