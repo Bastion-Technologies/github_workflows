@@ -45,7 +45,8 @@ jobs:
           CURRENT_VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
           echo "Current version is $CURRENT_VERSION"
 
-          TAG=${{ inputs.api && format('{0}-', inputs.api) || '' }}$CURRENT_VERSION
+          API=${{ inputs.workspace || inputs.api || '' }}
+          TAG=$API-$CURRENT_VERSION
 
           git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
           echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
