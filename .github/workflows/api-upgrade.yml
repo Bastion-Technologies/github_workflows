@@ -68,7 +68,7 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: "chore: Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}"
-          title: "chore: Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}"
+          title: "[🐚/Automatic Upgrade] Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}"
           body: |
             Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}
           branch: "upgrade-${{env.API}}-${{ steps.upgrade.outputs.version }}"
