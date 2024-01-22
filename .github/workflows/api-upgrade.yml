@@ -11,6 +11,10 @@ on:
         type: string
         description: "Workspace name of the API"
         required: false
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        description: "Shared secret for Nautilus"
+        required: true
 
 permissions:
   pull-requests: write
