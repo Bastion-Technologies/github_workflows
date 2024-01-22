@@ -45,5 +45,15 @@ jobs:
             else
                 git commit -m 'chore: Lokalise translations update'
                 git push origin ${{ env.VAR_BRANCH_NAME }} --force
-                gh pr view ${{ env.VAR_BRANCH_NAME }} && gh pr reopen ${{ env.VAR_BRANCH_NAME }} || gh pr create --fill -B main -H ${{ env.VAR_BRANCH_NAME }} --title 'chore: Lokalise translations' --body 'Automatically created by Github action'
+                # Creates the PR. This is the same as:
+                #     gh pr view ${{ env.VAR_BRANCH_NAME }} && gh pr reopen ${{ env.VAR_BRANCH_NAME }} || gh pr create --fill -B main -H ${{ env.VAR_BRANCH_NAME }} --title 'chore: Lokalise translations' --body 'Automatically created by Github action'
+                curl --location 'https://dev.bastion.tech/api/nautilus/pr' \
+                  --header 'Content-Type: application/json' \
+                  --data '{
+                      "repo": "${GITHUB_REPOSITORY}",
+                      "base": "main",
+                      "head": "${{ env.VAR_BRANCH_NAME }}",
+                      "title": "chore: Lokalise translations",
+                      "body": "Automatically created by Github action"
+                  }'
             fi
