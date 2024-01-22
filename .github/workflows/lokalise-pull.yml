@@ -12,6 +12,8 @@ on:
     secrets:
       LOKALISE_API_TOKEN:
         required: true
+      NAUTILUS_SHARED_SECRET:
+        required: true
 
 jobs:
   pull:
@@ -49,6 +51,7 @@ jobs:
                 #     gh pr view ${{ env.VAR_BRANCH_NAME }} && gh pr reopen ${{ env.VAR_BRANCH_NAME }} || gh pr create --fill -B main -H ${{ env.VAR_BRANCH_NAME }} --title 'chore: Lokalise translations' --body 'Automatically created by Github action'
                 curl --location 'https://dev.bastion.tech/api/nautilus/pr' \
                   --header 'Content-Type: application/json' \
+                  --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
                   --data '{
                       "repo": "${GITHUB_REPOSITORY}",
                       "base": "main",
