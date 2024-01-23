@@ -66,9 +66,12 @@ jobs:
           UPGRADE_BRANCH=upgrade-${{env.API}}-$VERSION
           echo "Upgraded ${{ env.API }} to version $VERSION"
           
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+
           git switch -c "$UPGRADE_BRANCH"
           git commit -am "chore: Upgrade ${{ env.API }} to $VERSION"
-          git push --set-upstream origin "$UPGRADE_BRANCH"
+          git push --set-upstream origin "$UPGRADE_BRANCH" --force
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "upgrade_branch=$UPGRADE_BRANCH" >> "$GITHUB_OUTPUT"
