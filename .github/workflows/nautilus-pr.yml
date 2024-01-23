@@ -19,6 +19,7 @@ on:
       repo:
         required: true
         type: string
+        default: ${{ github.repository }}
     secrets:
       NAUTILUS_SHARED_SECRET:
         required: true
