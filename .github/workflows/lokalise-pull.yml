@@ -54,7 +54,7 @@ jobs:
                   --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
                   --fail-with-body \
                   --data '{
-                      "repo": "${GITHUB_REPOSITORY}",
+                      "repo": "${{ github.repository }}",
                       "base": "main",
                       "head": "${{ env.VAR_BRANCH_NAME }}",
                       "title": "chore: Lokalise translations",
