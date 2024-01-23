@@ -1,0 +1,55 @@
+name: Update BT Dependencies
+
+on:
+  workflow_call:
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        required: true
+
+jobs:
+  update-bt-dependencies:
+    name: Update BT Dependencies
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' && contains(github.ref_name, 'bastion-technologies') }}
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Comment PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.inputs.prNumber }}
+          body: |
+            :robot: Bastion API upgrade detected, automatically updating BT Dependencies :robot:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: Update BT Dependencies
+        run: |
+          npm run nautilus
+      - name: Create new branch
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+      
+          git switch -c ${{ github.ref_name }}-bt-dependencies
+          git commit -am "chore: update BT dependencies"
+          git push --set-upstream origin ${{ github.ref_name }}-bt-dependencies --force
+
+  pr:
+    needs: update-bt-dependencies
+    name: Create Pull Request
+    uses: Bastion-Technologies/github_workflows/.github/workflows/nautilus-pr.yml@main
+    with:
+      repo: ${{ github.repository }}
+      branch: ${{ github.ref_name }}-bt-dependencies
+      base: ${{ github.ref_name }}
+      title: "chore: update BT dependencies for #${{ github.event.inputs.prNumber }}"
+      body: |
+        :robot: Bastion API upgrade detected, automatically updating BT Dependencies :robot:
+    secrets:
+      NAUTILUS_SHARED_SECRET: ${{ secrets.NAUTILUS_SHARED_SECRET }}
