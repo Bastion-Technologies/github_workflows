@@ -1,0 +1,44 @@
+name: Create Github PR [Nautilus]
+
+on: 
+  workflow_call:
+    inputs:
+      branch:
+        required: true
+        type: string
+      base:
+        required: true
+        type: string
+        default: main
+      title:
+        required: true
+        type: string
+      body:
+        required: true
+        type: string
+      repo:
+        required: true
+        type: string
+        default: ${{ github.repository }}
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        required: true
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Nautilus to create PR
+        run: |
+          curl --location 'https://dev.bastion.tech/api/nautilus/pr' \
+                  --header 'Content-Type: application/json' \
+                  --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
+                  --fail-with-body \
+                  --data '{
+                      "repo": "${{ inputs.repo }}",
+                      "base": "${{ inputs.base }}",
+                      "head": "${{ inputs.branch }}",
+                      "title": "${{ inputs.title }}",
+                      "body": "${{ inputs.body }}"
+                  }'
+      
