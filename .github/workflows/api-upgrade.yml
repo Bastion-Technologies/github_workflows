@@ -58,9 +58,14 @@ jobs:
         if: steps.should_upgrade.outputs.isDiff == 1
         id: upgrade
         run: |
-          SCRIPT=${{ inputs.api && format('upgrade-api:{0}', inputs.api) || 'upgrade-api' }}
+          if [ ${{ inputs.workspace || inputs.api }} ]; then
+            SCRIPT="npm -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} version patch"
+          else
+            SCRIPT="npm version patch"
+          fi
+
           echo "Running $SCRIPT"
-          npm run $SCRIPT patch
+          $SCRIPT
 
           VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
           UPGRADE_BRANCH=upgrade-${{env.API}}-$VERSION
