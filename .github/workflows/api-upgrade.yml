@@ -50,7 +50,7 @@ jobs:
           echo "Current version is $CURRENT_VERSION"
 
           API=${{ inputs.workspace || inputs.api || '' }}
-          TAG=$API-$CURRENT_VERSION
+          TAG=${API:+$API-}$CURRENT_VERSION
 
           git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
           echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
