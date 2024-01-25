@@ -85,6 +85,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
       - name: Retrieve API definition file
         run: |
           mkdir -p ./.tmp
@@ -104,17 +105,26 @@ jobs:
           echo "EOF" >> "$GITHUB_OUTPUT"
 
           exit $exitCode
+
       - name: Post oasdiff report
-        if: ${{ always() }}
+        if: ${{ always() && steps.oasdiff.conclusion == 'failure' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: oasdiff
           message: |
             <!-- bot:oasdiff -->
             # BREAKING CHANGES
+
+            > [!WARNING]
+            > Please fix the breaking changes before merging this PR or reach a GitHub admin to approve the breaking changes.
+
             ## ${{ steps.oasdiff.outputs.HEADER }}
             ```
             ${{ steps.oasdiff.outputs.REPORT }}
             ```
-
-            Please fix the breaking changes before merging this PR or reach a GitHub admin to approve the breaking changes.
+      - name: Delete oasdiff report
+        if: ${{ always() && steps.oasdiff.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: oasdiff
+          delete: true
