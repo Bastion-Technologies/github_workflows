@@ -76,3 +76,45 @@ jobs:
               repo: context.repo.repo,
               body: "✅ You are updating library ${{ inputs.library-name }} to version ${{ env.CURRENT }}."
             })
+
+  check-api-breaking-changes:
+    needs: check-if-changed
+    if: needs.check-if-changed.outputs.isdiff == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Retrieve API definition file
+        run: |
+          mkdir -p ./.tmp
+
+          API_FILE_PATH=$(find . -name ${{ inputs.library-name }}.yaml)
+
+          git show origin/main:$API_FILE_PATH > ./.tmp/${{ inputs.library-name }}-base.yaml
+          cp -p $API_FILE_PATH ./.tmp/${{ inputs.library-name }}-revision.yaml
+      - name: Check API breaking changes
+        id: oasdiff
+        run: |
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/${{ inputs.library-name }}-base.yaml /apis/${{ inputs.library-name }}-revision.yaml --format text --color never --fail-on WARN >> report && exitCode=$? || exitCode=$?
+
+          echo "HEADER=$(cat report | head -n 1)" >> "$GITHUB_OUTPUT"
+          echo "REPORT<<EOF" >> "$GITHUB_OUTPUT"
+          cat report | tail -n+2 | head -n-2 >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          exit $exitCode
+      - name: Post oasdiff report
+        if: ${{ always() }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: oasdiff
+          message: |
+            <!-- bot:oasdiff -->
+            # BREAKING CHANGES
+            ## ${{ steps.oasdiff.outputs.HEADER }}
+            ```
+            ${{ steps.oasdiff.outputs.REPORT }}
+            ```
+
+            Please fix the breaking changes before merging this PR or reach a GitHub admin to approve the breaking changes.
