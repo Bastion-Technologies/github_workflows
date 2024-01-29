@@ -82,7 +82,7 @@ jobs:
     if: needs.check-if-changed.outputs.isdiff == 'yes'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -97,11 +97,21 @@ jobs:
       - name: Check API breaking changes
         id: oasdiff
         run: |
-          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/${{ inputs.library-name }}-base.yaml /apis/${{ inputs.library-name }}-revision.yaml --format text --color never --fail-on WARN >> report && exitCode=$? || exitCode=$?
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/${{ inputs.library-name }}-base.yaml /apis/${{ inputs.library-name }}-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
 
-          echo "HEADER=$(cat report | head -n 1)" >> "$GITHUB_OUTPUT"
+          # Removes the response-property-enum-value-added warning
+          REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id != "response-property-enum-value-added" )]')
+
+          # Format and extract counts
+          REPORT_TEXT=$(echo "$REPORT_FILTERED" | jq -r '.[] | if .level == 2 then "warning" else "error" end + "\t[\(.id)] at \(.source)\n\tin API \(.operation) \(.path)\n\t\t\(.text)\n"')
+          WARNING_COUNT=$(echo "$REPORT_TEXT" | grep -c "^warning")
+          ERROR_COUNT=$(echo "$REPORT_TEXT" | grep -c "^error")
+          TOTAL_COUNT=$((WARNING_COUNT + ERROR_COUNT))
+          HEADER="$TOTAL_COUNT breaking change(s): $ERROR_COUNT error(s), $WARNING_COUNT warning(s)"
+
+          echo "HEADER=$HEADER" >> "$GITHUB_OUTPUT"
           echo "REPORT<<EOF" >> "$GITHUB_OUTPUT"
-          cat report | tail -n+2 | head -n-2 >> "$GITHUB_OUTPUT"
+          echo "$REPORT_TEXT" | head -n-1 >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
           exit $exitCode
