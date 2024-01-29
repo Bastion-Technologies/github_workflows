@@ -117,8 +117,17 @@ jobs:
             "sunset-deleted"
           '
 
+          echo "Original report: $(cat report | jq)"
+
           # Removes the response-property-enum-value-added warning
           REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id | IN('"$CHECKS_TO_IGNORE"') | not)]')
+
+          echo "Filtered report: $(echo $REPORT_FILTERED | jq)"
+
+          if echo "$REPORT_FILTERED" | jq -e 'length == 0'; then
+            echo "No remaining breaking change after filtering"
+            exit 1
+          fi
 
           # Format and extract counts
           REPORT_TEXT=$(echo "$REPORT_FILTERED" | jq -r '.[] | if .level == 2 then "warning" else "error" end + "\t[\(.id)] at \(.source)\n\tin API \(.operation) \(.path)\n\t\t\(.text)\n"')
