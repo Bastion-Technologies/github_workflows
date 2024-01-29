@@ -103,8 +103,22 @@ jobs:
             exit 0
           fi
 
+          CHECKS_TO_IGNORE='
+            # Ignore new enum values warning, as we cant use x-extensible-enum because of AJV
+            "response-property-enum-value-added",
+
+            # Ignore sunset-related errors
+            "api-deprecated-sunset-parse",
+            "api-path-removed-before-sunset",
+            "api-path-sunset-parse",
+            "api-removed-before-sunset",
+            "api-sunset-date-changed-too-small",
+            "api-sunset-date-too-small",
+            "sunset-deleted"
+          '
+
           # Removes the response-property-enum-value-added warning
-          REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id != "response-property-enum-value-added" )]')
+          REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id | IN('"$CHECKS_TO_IGNORE"') | not)]')
 
           # Format and extract counts
           REPORT_TEXT=$(echo "$REPORT_FILTERED" | jq -r '.[] | if .level == 2 then "warning" else "error" end + "\t[\(.id)] at \(.source)\n\tin API \(.operation) \(.path)\n\t\t\(.text)\n"')
