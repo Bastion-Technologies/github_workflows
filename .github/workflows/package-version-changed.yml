@@ -99,13 +99,17 @@ jobs:
         run: |
           docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/${{ inputs.library-name }}-base.yaml /apis/${{ inputs.library-name }}-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
 
+          if [ $exitCode -eq 0 ]; then
+            exit 0
+          fi
+
           # Removes the response-property-enum-value-added warning
           REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id != "response-property-enum-value-added" )]')
 
           # Format and extract counts
           REPORT_TEXT=$(echo "$REPORT_FILTERED" | jq -r '.[] | if .level == 2 then "warning" else "error" end + "\t[\(.id)] at \(.source)\n\tin API \(.operation) \(.path)\n\t\t\(.text)\n"')
-          WARNING_COUNT=$(echo "$REPORT_TEXT" | grep -c "^warning")
-          ERROR_COUNT=$(echo "$REPORT_TEXT" | grep -c "^error")
+          WARNING_COUNT=$((echo "$REPORT_TEXT" | grep -c "^warning") || true)
+          ERROR_COUNT=$((echo "$REPORT_TEXT" | grep -c "^error") || true)
           TOTAL_COUNT=$((WARNING_COUNT + ERROR_COUNT))
           HEADER="$TOTAL_COUNT breaking change(s): $ERROR_COUNT error(s), $WARNING_COUNT warning(s)"
 
