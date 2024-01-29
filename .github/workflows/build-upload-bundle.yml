@@ -40,6 +40,7 @@ on:
 jobs:
     deploy:
         strategy:
+          fail-fast: false
           matrix:
             include:
               - environment: staging
