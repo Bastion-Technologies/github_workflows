@@ -1,0 +1,36 @@
+name: Merge Github PR [Nautilus]
+
+on: 
+  workflow_call:
+    inputs:
+      repo:
+        required: true
+        type: string
+        default: ${{ github.repository }}
+      prNumber:
+        required: true
+        type: number
+        default: ${{ github.event.number }}
+      mergeMethod:
+        required: false
+        type: string
+        default: squash
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        required: true
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Nautilus to merge a PR
+        run: |
+          curl --location 'https://dev.bastion.tech/api/nautilus/merge' \
+                  --header 'Content-Type: application/json' \
+                  --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
+                  --fail-with-body \
+                  --data '{
+                      "repo": "${{ inputs.repo }}",
+                      "prNumber": "${{ inputs.prNumber }}",
+                      "mergeMethod": "${{ inputs.mergeMethod }}"
+                  }'
