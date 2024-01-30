@@ -154,12 +154,27 @@ jobs:
           npm test -- ${{ matrix.workspace }} --passWithNoTests;
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
+
+  has-cdk-changed:
+    name: Has CDK changed
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check if CDK changed
+        run: |
+          git diff --name-only origin/main HEAD | grep -q 'cdk/.*\.ts$' && hasChanged=true || hasChanged=false
+          echo "Has CDK Changed: $hasChanged"
+          echo "CDK_CHANGED=$hasChanged" >> "$GITHUB_OUTPUT"
   synth-check:
     name: CDK Synth
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build]
+    if: ${{ github.actor != 'dependabot[bot]' }} && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true'
+    needs: [build, has-cdk-changed]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
