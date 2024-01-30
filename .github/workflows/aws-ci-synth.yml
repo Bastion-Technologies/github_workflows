@@ -159,12 +159,15 @@ jobs:
     name: Has CDK changed
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      CDK_CHANGED: ${{ steps.check-if-cdk-changed.outputs.CDK_CHANGED }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Check if CDK changed
+        id: check-if-cdk-changed
         run: |
           git diff --name-only origin/main HEAD | grep -q 'cdk/.*\.ts$' && hasChanged=true || hasChanged=false
           echo "Has CDK Changed: $hasChanged"
@@ -173,7 +176,7 @@ jobs:
     name: CDK Synth
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ github.actor != 'dependabot[bot]' }} && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true'
+    if: ${{ github.actor != 'dependabot[bot]' && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true' }}
     needs: [build, has-cdk-changed]
     steps:
       - name: Checkout
