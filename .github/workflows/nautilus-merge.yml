@@ -4,11 +4,11 @@ on:
   workflow_call:
     inputs:
       repo:
-        required: true
+        required: false
         type: string
         default: ${{ github.repository }}
       prNumber:
-        required: true
+        required: false
         type: number
         default: ${{ github.event.number }}
       mergeMethod:
