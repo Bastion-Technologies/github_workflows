@@ -1,0 +1,41 @@
+name: Dependabot auto-merge
+
+on:
+  workflow_call:
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        description: "Shared secret for Nautilus"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-approve-dependabot:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    outputs:
+      update-type: ${{ steps.metadata.outputs.update-type }}
+    steps:
+      - name: Dependabot metadata :)
+        id: metadata
+        uses: dependabot/fetch-metadata@v1.1.1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Auto approve
+        uses: cognitedata/auto-approve-dependabot-action@v3.0.1
+        if: github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  auto-merge-dependabot:
+    needs: [auto-approve-dependabot]
+    if: ${{ github.actor == 'dependabot[bot]' && (needs.auto-approve-dependabot.outputs.update-type == 'version-update:semver-minor' || needs.auto-approve-dependabot.outputs.update-type == 'version-update:semver-patch') }}
+    name: Auto Merge Dependabot
+    uses: Bastion-Technologies/github_workflows/.github/workflows/nautilus-merge.yml@main
+    with:
+      repo: ${{ github.repository }}
+      prNumber: ${{ github.event.number }}
+    secrets:
+      NAUTILUS_SHARED_SECRET: ${{ secrets.NAUTILUS_SHARED_SECRET }}
