@@ -20,7 +20,7 @@ on:
         required: true
 
 jobs:
-  create-pull-request:
+  merge-pull-request:
     runs-on: ubuntu-latest
     steps:
       - name: Query Nautilus to merge a PR

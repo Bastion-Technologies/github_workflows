@@ -92,7 +92,7 @@ jobs:
           path: "**/node_modules/**"
       - name: Typescript checking
         run: |
-          npm run compile --workspaces --if-present;
+          npm run compile --workspaces --if-present --include-workspace-root;
   linter-check:
     name: Linter checking
 
@@ -111,7 +111,7 @@ jobs:
           path: "**/node_modules/**"
       - name: Linter checking
         run: |
-          npm run lint --workspaces --if-present;
+          npm run lint --workspaces --if-present --include-workspace-root;
   list-workspaces:
     name: List workspaces
     runs-on: ubuntu-latest
