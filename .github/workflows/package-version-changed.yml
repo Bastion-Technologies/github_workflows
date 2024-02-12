@@ -126,7 +126,7 @@ jobs:
 
           if echo "$REPORT_FILTERED" | jq -e 'length == 0'; then
             echo "No remaining breaking change after filtering"
-            exit 1
+            exit 0
           fi
 
           # Format and extract counts
