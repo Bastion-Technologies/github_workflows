@@ -59,9 +59,9 @@ jobs:
         id: upgrade
         run: |
           if [ ${{ inputs.workspace || inputs.api }} ]; then
-            SCRIPT="npm -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} version patch"
+            SCRIPT="npm -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} version patch --no-git-tag-version"
           else
-            SCRIPT="npm version patch"
+            SCRIPT="npm version patch --no-git-tag-version"
           fi
 
           git config --global user.name "nautilus-bot-1"
