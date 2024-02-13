@@ -59,7 +59,7 @@ jobs:
           IGNORE_WORKSPACES_PATTERN=$(echo ${{ inputs.ignore-workspaces }} | sed 's/, */|/g')
           WORKSPACES=$(npm exec --silent --workspaces --include-workspace-root --call 'pwd')
 
-          echo "\nIgnoring workspaces matching pattern: $IGNORE_WORKSPACES_PATTERN"
+          echo -e "\nIgnoring workspaces matching pattern: $IGNORE_WORKSPACES_PATTERN"
 
           if [ -n "$IGNORE_WORKSPACES_PATTERN" ]; then
             WORKSPACES=$(echo "$WORKSPACES" | grep -vE "$IGNORE_WORKSPACES_PATTERN$")
