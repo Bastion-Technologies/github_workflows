@@ -1,0 +1,110 @@
+name: Check unused dependencies
+
+on:
+  workflow_call:
+    inputs:
+      skip-missing:
+        description: "Skip calculation of missing dependencies"
+        type: boolean
+        required: false
+        default: true
+      ignores:
+        description: "A comma separated array containing package names to ignore. It can be glob expressions. Example: eslint,babel-*"
+        type: string
+        required: false
+        default: ""
+      ignore-patterns:
+        description: "Comma separated patterns describing files to ignore. Patterns must match the .gitignore spec. Example: build/Release,dist,coverage,*.log"
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pull-requests: write
+  packages: read
+
+jobs:
+  check-unused-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: install dependencies
+        run: |
+          if [ -f "install.sh" ]
+            then
+                echo "install.sh script found! running it";
+                chmod 700 install.sh
+                ./install.sh
+            else
+               echo "install.sh script NOT found! running `npm ci`";
+               npm ci;
+          fi
+        env:
+          GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check unused dependencies
+        id: unused-dependencies-check
+        run: |
+          npm install -g depcheck typescript
+
+          DEFAULT_IGNORES="@side/jest-runtime, ts-node"
+
+          WORKSPACES=$(npm exec --silent --workspaces --call 'pwd')
+          WORKSPACES=$(pwd)$'\n'${WORKSPACES}
+          HAS_ERROR=0
+
+          touch failures.txt
+
+          echo -e "Workspaces found:\n$WORKSPACES\n"
+
+          for workspace in $WORKSPACES; do
+            depcheck \
+              --skip-missing=${{ inputs.skip-missing }} \
+              --ignores="$DEFAULT_IGNORES,${{ inputs.ignores }}" \
+              --ignore-patterns=${{ inputs.ignore-patterns }} \
+              $workspace > results.txt && exitCode=$? || exitCode=$?
+
+            if [ $exitCode -ne 0 ]; then
+              echo "======= ERROR: $workspace ==========" >> failures.txt
+              cat results.txt >> failures.txt
+              echo -e "\n" >> failures.txt
+              HAS_ERROR=$exitCode
+            fi
+
+            echo "======= ANALYZING $workspace =========="
+            cat results.txt
+            echo -e "\n"
+          done
+
+          if [ $HAS_ERROR -ne 0 ]; then
+            echo "REPORT<<EOF" >> "$GITHUB_OUTPUT"
+            cat failures.txt | head -n-1 >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+
+          exit $HAS_ERROR
+
+      - name: Post unused dependencies check report
+        if: ${{ always() && steps.unused-dependencies-check.conclusion == 'failure' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: unused-dependencies
+          message: |
+            <!-- bot:depcheck -->
+            # UNUSED DEPENDENCIES FOUND !
+
+            > [!WARNING]
+            > Please remove the unused dependencies from the project before merging this PR.
+
+            ```
+            ${{ steps.unused-dependencies-check.outputs.REPORT }}
+            ```
+      - name: Delete unused dependencies check report
+        if: ${{ always() && steps.unused-dependencies-check.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: unused-dependencies
+          delete: true
