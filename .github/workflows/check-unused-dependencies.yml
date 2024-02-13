@@ -50,10 +50,9 @@ jobs:
         run: |
           npm install -g depcheck typescript
 
-          DEFAULT_IGNORES="@side/jest-runtime, ts-node"
+          DEFAULT_IGNORES="@side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node"
 
-          WORKSPACES=$(npm exec --silent --workspaces --call 'pwd')
-          WORKSPACES=$(pwd)$'\n'${WORKSPACES}
+          WORKSPACES=$(npm exec --silent --workspaces --include-workspace-root --call 'pwd')
           HAS_ERROR=0
 
           touch failures.txt
