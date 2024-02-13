@@ -18,6 +18,11 @@ on:
         type: string
         required: false
         default: ""
+      ignore-workspaces:
+        description: "A comma separated array containing workspace names to ignore. Example: docs-app,test"
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -51,8 +56,13 @@ jobs:
           npm install -g depcheck typescript
 
           DEFAULT_IGNORES="@side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node"
-
+          IGNORE_WORKSPACES_PATTERN=$(echo ${{ inputs.ignore-workspaces }} | sed 's/, */|/g')
           WORKSPACES=$(npm exec --silent --workspaces --include-workspace-root --call 'pwd')
+
+          if [ -n "$IGNORE_WORKSPACES_PATTERN" ]; then
+            WORKSPACES=$(echo $WORKSPACES | grep -vE "$IGNORE_WORKSPACES_PATTERN$")
+          fi
+
           HAS_ERROR=0
 
           touch failures.txt
