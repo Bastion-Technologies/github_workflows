@@ -1,0 +1,47 @@
+name: "ADR Check"
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check-adr:
+    name: Check if an ADR is present
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect
+        id: detect
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          CHECKBOX_REGEX="\[x\].*adr"
+
+          echo "$BODY" | grep -Piq $CHECKBOX_REGEX && IS_CHECKED=true || IS_CHECKED=false
+
+          if [ $IS_CHECKED = true ]; then
+            echo "This PR doesn´t need an ADR"
+          else
+            echo "This PR needs an ADR"
+          fi
+
+          echo "checked=$IS_CHECKED" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        if: ${{ steps.detect.outputs.checked == 'false' }}
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Check ADR
+        if: ${{ steps.detect.outputs.checked == 'false' }}
+        run: |
+          git diff --name-only origin/main HEAD | grep -q 'ADR.*\.md$' && hasADR=true || hasADR=false
+
+          if [ $hasADR = true ]; then
+            echo "There is a new ADR, all good"
+          else
+            echo "There is no new ADR, please create one"
+            exit 1
+          fi
