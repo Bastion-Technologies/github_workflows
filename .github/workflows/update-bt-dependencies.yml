@@ -11,7 +11,7 @@ jobs:
     name: Update BT Dependencies
     runs-on: ubuntu-latest
     # Runs only for merged Dependabot PRs updating a Bastion API
-    if: ${{ github.actor == 'dependabot[bot]' && contains(github.head_ref, 'bastion-technologies') && github.event.pull_request.merged == true }}
+    if: ${{ contains(github.head_ref, 'dependabot') && contains(github.head_ref, 'bastion-technologies') && github.event.pull_request.merged == true }}
 
     permissions:
       contents: write
