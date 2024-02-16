@@ -9,6 +9,7 @@ permissions:
 jobs:
   check-adr:
     name: Check if an ADR is present
+    if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - name: Detect
