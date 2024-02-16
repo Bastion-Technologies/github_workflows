@@ -54,3 +54,7 @@ jobs:
         with:   
           header: pr-title-lint-error
           delete: true
+
+  check-adr:
+    name: Check ADR
+    uses: Bastion-Technologies/github_workflows/.github/workflows/check-adr.yml@main
