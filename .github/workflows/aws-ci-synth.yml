@@ -9,6 +9,10 @@ on:
       stack:
         required: false
         type: string
+      enable-nx-cache:
+        required: false
+        type: boolean
+        default: true
     secrets:
       AWS_CICD_ROLE:
         required: true
@@ -47,7 +51,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
       - name: Setup NodeJS
         uses: actions/setup-node@v3
         with:
@@ -76,12 +79,10 @@ jobs:
 
   typescript-check:
     name: Typescript checking
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: [build]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -93,14 +94,13 @@ jobs:
       - name: Typescript checking
         run: |
           npm run compile --workspaces --if-present --include-workspace-root;
+
   linter-check:
     name: Linter checking
-
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs: [build]
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -112,6 +112,7 @@ jobs:
       - name: Linter checking
         run: |
           npm run lint --workspaces --if-present --include-workspace-root;
+
   list-workspaces:
     name: List workspaces
     runs-on: ubuntu-latest
@@ -132,26 +133,80 @@ jobs:
           WORKSPACES=$(npm query .workspace | jq -r '.[].location' | jq --raw-input --slurp 'split("\n")' | jq 'del(.[] | select(. == ""))')
           echo 'found workspaces: '$WORKSPACES
           echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
+
+  check-if-nx-workspace:
+    name: Check if NX Workspace
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      isNxWorkspace: ${{ steps.is-nx-workspace.outputs.isNxWorkspace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Is NX Workspace
+        id: is-nx-workspace
+        run: |
+          if [ -f "nx.json" ]
+            then
+                echo "Is NX Workspace";
+                echo "isNxWorkspace=true" >> "$GITHUB_OUTPUT"
+            else
+               echo "Is NOT NX Workspace";
+               echo "isNxWorkspace=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: nrwl/nx-set-shas@v3
+        if: ${{ steps.is-nx-workspace.outputs.isNxWorkspace == 'true' }}
+
   test-check:
     name: Run unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
-    needs: [build, list-workspaces]
+    needs: [build, list-workspaces, check-if-nx-workspace]
     strategy:
       matrix:
         workspace: ${{ fromJSON(needs.list-workspaces.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Restore Build
         uses: actions/cache/restore@v3
         with:
           key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
-      - name: Run unit tests
+
+      - name: Run unit tests (NPM)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'false' }}
         run: |
           npm test -- ${{ matrix.workspace }} --passWithNoTests;
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
+      - name: Cache Tests (NX)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' && inputs.enable-nx-cache == true }}
+        uses: actions/cache@v3
+        with:
+          path: "**/.nx/**"
+          key: cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-${{ github.sha }}
+          restore-keys: |
+            cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-
+            cache-nx-${{ github.ref_name }}-
+            cache-nx-
+      - name: Run unit tests (NX)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }}
+        run: |
+          PROJECT=$(cat ${{ matrix.workspace }}/package.json | jq -r '.name')
+          IS_PROJECT_AFFECTED=$(npx nx show projects --affected --with-target test --base=origin/main --head=HEAD | grep -q $PROJECT && echo "true" || echo "false")
+          if [ $IS_PROJECT_AFFECTED == "true" ]
+            then
+                npx nx test $PROJECT --passWithNoTests;
+            else
+               echo "Project not affected, skipping tests";
+          fi
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
@@ -221,18 +276,23 @@ jobs:
     steps:
       - name: echo
         run: |
+          # Build result
           if [[ "${{ needs.build.result }}" == "failure" ]]; then
             exit 1
           fi
+          # Typescript result
           if [[ "${{ needs.typescript-check.result }}" == "failure" ]]; then
             exit 1
           fi
+          # Linter result
           if [[ "${{ needs.linter-check.result }}" == "failure" ]]; then
             exit 1
           fi
+          # Test result
           if [[ "${{ needs.test-check.result }}" == "failure" ]]; then
             exit 1
           fi
+          # Synth result
           if [[ "${{ needs.synth-check.result }}" == "failure" ]]; then
             exit 1
           fi
