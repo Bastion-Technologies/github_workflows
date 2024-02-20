@@ -9,7 +9,7 @@ permissions:
 jobs:
   check-adr:
     name: Check if an ADR is present
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && ! startsWith(github.head_ref, 'lokalise')  }}
     runs-on: ubuntu-latest
     steps:
       - name: Detect
