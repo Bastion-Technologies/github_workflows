@@ -156,8 +156,6 @@ jobs:
                echo "Is NOT NX Workspace";
                echo "isNxWorkspace=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: nrwl/nx-set-shas@v3
-        if: ${{ steps.is-nx-workspace.outputs.isNxWorkspace == 'true' }}
 
   test-check:
     name: Run unit tests
@@ -196,11 +194,13 @@ jobs:
             cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-
             cache-nx-${{ github.ref_name }}-
             cache-nx-
+      - uses: nrwl/nx-set-shas@v3
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }} 
       - name: Run unit tests (NX)
         if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }}
         run: |
           PROJECT=$(cat ${{ matrix.workspace }}/package.json | jq -r '.name')
-          IS_PROJECT_AFFECTED=$(npx nx show projects --affected --with-target test --base=origin/main --head=HEAD | grep -q $PROJECT && echo "true" || echo "false")
+          IS_PROJECT_AFFECTED=$(npx nx show projects --affected --with-target test | grep -q $PROJECT && echo "true" || echo "false")
           if [ $IS_PROJECT_AFFECTED == "true" ]
             then
                 npx nx test $PROJECT --passWithNoTests;
