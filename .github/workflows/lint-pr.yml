@@ -1,6 +1,10 @@
-name: Lint PR
+name: Validate PR
 
 on: workflow_call
+
+permissions:
+  contents: read
+  pull-requests: write
 
 jobs:
   lint_pr_title:
