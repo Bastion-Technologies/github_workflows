@@ -31,14 +31,14 @@ jobs:
 
       - name: Checkout
         if: ${{ steps.detect.outputs.checked == 'false' }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Check ADR
         if: ${{ steps.detect.outputs.checked == 'false' }}
         run: |
-          git diff --name-only origin/main HEAD | grep -q 'ADR.*\.md$' && hasADR=true || hasADR=false
+          git diff --name-only origin/main origin/${{ github.head_ref }} | grep -q 'ADR.*\.md$' && hasADR=true || hasADR=false
 
           if [ $hasADR = true ]; then
             echo "There is a new ADR, all good"
