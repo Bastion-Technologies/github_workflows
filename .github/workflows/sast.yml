@@ -33,13 +33,13 @@ jobs:
 
     steps:
       - name: Setup node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "18.19.0"
           registry-url: https://npm.pkg.github.com/
 
       - name: clone application source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v3
         with:
