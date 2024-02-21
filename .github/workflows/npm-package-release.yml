@@ -23,13 +23,13 @@ jobs:
     outputs:
       isdiff: ${{ steps.check.outputs.isdiff }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
       - name: Setup NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "18.19.0"
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
           registry-url: https://npm.pkg.github.com/
@@ -56,10 +56,10 @@ jobs:
     outputs:
       version: ${{ steps.package-version.outputs.current-version }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 16.x
+          node-version: "18.19.0"
           registry-url: https://npm.pkg.github.com/
       - name: "Install dependencies"
         run: npm ci
