@@ -19,6 +19,9 @@ jobs:
   pull:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
     runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.commit.outputs.has_changes }}
+      branch_name: ${{ steps.commit.outputs.branch_name }}
     steps:
       - uses: actions/checkout@v3
       - name: Lokalise CLI
@@ -31,6 +34,7 @@ jobs:
         run: |
              ./bin/lokalise2 --token ${{ env.VAR_LOKALISE_API_TOKEN }} --project-id ${{ env.VAR_LOKALISE_PROJECT_ID }} file download --json-unescaped-slashes --format json --original-filenames=true --directory-prefix=/
       - name: Commit
+        id: commit
         env: 
           GH_TOKEN: ${{ github.token }}
           VAR_BRANCH_NAME: 'lokalise/translation-udpate'
@@ -47,17 +51,22 @@ jobs:
             else
                 git commit -m 'chore: Lokalise translations update'
                 git push origin ${{ env.VAR_BRANCH_NAME }} --force
-                # Creates the PR. This is the same as:
-                #     gh pr view ${{ env.VAR_BRANCH_NAME }} && gh pr reopen ${{ env.VAR_BRANCH_NAME }} || gh pr create --fill -B main -H ${{ env.VAR_BRANCH_NAME }} --title 'chore: Lokalise translations' --body 'Automatically created by Github action'
-                curl --location 'https://dev.bastion.tech/api/nautilus/pr' \
-                  --header 'Content-Type: application/json' \
-                  --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
-                  --fail-with-body \
-                  --data '{
-                      "repo": "${{ github.repository }}",
-                      "base": "main",
-                      "head": "${{ env.VAR_BRANCH_NAME }}",
-                      "title": "chore: Lokalise translations",
-                      "body": "Automatically created by Github action"
-                  }'
+
+                echo "has_changes=true" >> "$GITHUB_OUTPUT"
+                echo "branch_name=${{ env.VAR_BRANCH_NAME }}" >> "$GITHUB_OUTPUT"
             fi
+
+  pr:
+    name: Create Pull Request
+    needs: pull
+    if: ${{ needs.pull.outputs.has_changes == 'true' }}
+    uses: Bastion-Technologies/github_workflows/.github/workflows/nautilus-pr.yml@main
+    with:
+      repo: ${{ github.repository }}
+      base: main
+      branch: ${{ needs.pull.outputs.branch_name }}
+      title: "chore: Lokalise translations"
+      body: "Automatically created by Github action"
+      ignoreExistingPR: true
+    secrets:
+      NAUTILUS_SHARED_SECRET: ${{ secrets.NAUTILUS_SHARED_SECRET }}

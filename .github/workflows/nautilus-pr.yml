@@ -20,6 +20,10 @@ on:
         required: true
         type: string
         default: ${{ github.repository }}
+      ignoreExistingPR:
+        required: false
+        type: boolean
+        default: false
     secrets:
       NAUTILUS_SHARED_SECRET:
         required: true
@@ -39,6 +43,7 @@ jobs:
                       "base": "${{ inputs.base }}",
                       "head": "${{ inputs.branch }}",
                       "title": "${{ inputs.title }}",
-                      "body": "${{ inputs.body }}"
+                      "body": "${{ inputs.body }}",
+                      "ignoreExistingPR": ${{ inputs.ignoreExistingPR }}
                   }'
       
