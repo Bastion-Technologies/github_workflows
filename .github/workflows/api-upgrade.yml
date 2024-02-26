@@ -53,6 +53,16 @@ jobs:
           TAG=${API:+$API-}$CURRENT_VERSION
 
           git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
+
+          if [ $isDiff -eq 0 ]; then
+            echo "No changes detected"
+          elif [ $isDiff -eq 128 ]; then
+            echo "Diff error"
+            exit 1
+          else
+            echo "Changes detected"
+          fi
+
           echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
       - name: Run upgrade
         if: steps.should_upgrade.outputs.isDiff == 1
