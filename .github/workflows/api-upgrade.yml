@@ -91,8 +91,8 @@ jobs:
           method: POST
           customHeaders: '{"x-shared-secret": "${{ secrets.NAUTILUS_SHARED_SECRET }}"}'
           data: '{"repo": "${{ github.repository }}", "base": "main", "head": "${{ steps.upgrade.outputs.upgrade_branch }}", "title": "chore(deps): [🐚/Automatic Upgrade] Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}", "body": "Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}" }'
-      - name: Create pull request
+      - name: Auto approve
         if: steps.should_upgrade.outputs.isDiff == 1
         uses: hmarr/auto-approve-action@v4
         with:
-          pull-request-number: ${{ fromJson(steps.create_pull_request.outputs.response).number }}
+          pull-request-number: ${{ fromJson(steps.create_pull_request.outputs.response).response.data.number }}
