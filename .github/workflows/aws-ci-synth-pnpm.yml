@@ -1,0 +1,302 @@
+name: Synth on PR
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        required: true
+        type: string
+      stack:
+        required: false
+        type: string
+      enable-nx-cache:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      AWS_CICD_ROLE:
+        required: true
+      AWS_CICD_ACCESS_KEY:
+        required: true
+      AWS_CICD_SECRET_KEY:
+        required: true
+
+jobs:
+  # sast:
+  #   name: SAST Check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Run Report
+  #       id: report
+  #       uses: bearer/bearer-action@v2
+  #       with:
+  #         diff: true
+
+  sast:
+    name: SAST
+    uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
+
+  build:
+    defaults:
+      run:
+        working-directory: ./cdk
+
+    name: Build
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PNPM
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18.19.0"
+          cache: "pnpm"
+      - name: install dependencies
+        run: |
+          if [ -f "install.sh" ]
+            then
+                echo "install.sh script found! running it";
+                chmod 700 install.sh
+                ./install.sh
+            else
+               echo "install.sh script NOT found! running `pnpm install --frozen-lockfile`";
+               cd ..;
+               pnpm install --frozen-lockfile;
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/cache/save@v3
+        with:
+          path: "**/node_modules/**"
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}  
+
+  typescript-check:
+    name: Typescript checking
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+      - name: Typescript checking
+        run: |
+          npm run compile --workspaces --if-present --include-workspace-root;
+
+  linter-check:
+    name: Linter checking
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+      - name: Linter checking
+        run: |
+          npm run lint --workspaces --if-present --include-workspace-root;
+
+  list-workspaces:
+    name: List workspaces
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build]
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+      - id: set-matrix
+        run: |
+          WORKSPACES=$(npm query .workspace | jq -r '.[].location' | jq --raw-input --slurp 'split("\n")' | jq 'del(.[] | select(. == ""))')
+          echo 'found workspaces: '$WORKSPACES
+          echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
+
+  check-if-nx-workspace:
+    name: Check if NX Workspace
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      isNxWorkspace: ${{ steps.is-nx-workspace.outputs.isNxWorkspace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Is NX Workspace
+        id: is-nx-workspace
+        run: |
+          if [ -f "nx.json" ]
+            then
+                echo "Is NX Workspace";
+                echo "isNxWorkspace=true" >> "$GITHUB_OUTPUT"
+            else
+               echo "Is NOT NX Workspace";
+               echo "isNxWorkspace=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test-check:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    needs: [build, list-workspaces, check-if-nx-workspace]
+    strategy:
+      matrix:
+        workspace: ${{ fromJSON(needs.list-workspaces.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+
+      - name: Run unit tests (NPM)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'false' }}
+        run: |
+          npm test -- ${{ matrix.workspace }} --passWithNoTests;
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
+      - name: Cache Tests (NX)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' && inputs.enable-nx-cache == true }}
+        uses: actions/cache@v3
+        with:
+          path: "**/.nx/**"
+          key: cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-${{ github.sha }}
+          restore-keys: |
+            cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-
+            cache-nx-${{ github.ref_name }}-
+            cache-nx-
+      - uses: nrwl/nx-set-shas@v3
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }} 
+      - name: Run unit tests (NX)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }}
+        run: |
+          PROJECT=$(cat ${{ matrix.workspace }}/package.json | jq -r '.name')
+          IS_PROJECT_AFFECTED=$(npx nx show projects --affected --with-target test | grep -q $PROJECT && echo "true" || echo "false")
+          if [ $IS_PROJECT_AFFECTED == "true" ]
+            then
+                npx nx test $PROJECT --passWithNoTests;
+            else
+               echo "Project not affected, skipping tests";
+          fi
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+
+  has-cdk-changed:
+    name: Has CDK changed
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      CDK_CHANGED: ${{ steps.check-if-cdk-changed.outputs.CDK_CHANGED }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Check if CDK changed
+        id: check-if-cdk-changed
+        run: |
+          git diff --name-only origin/main HEAD | grep -q 'cdk/.*\.ts$' && hasChanged=true || hasChanged=false
+          echo "Has CDK Changed: $hasChanged"
+          echo "CDK_CHANGED=$hasChanged" >> "$GITHUB_OUTPUT"
+  synth-check:
+    name: CDK Synth
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: ${{ github.actor != 'dependabot[bot]' && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true' }}
+    needs: [build, has-cdk-changed]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore Build
+        uses: actions/cache/restore@v3
+        with:
+          key: cache-${{ github.run_id }}-${{ github.run_attempt }}
+          path: "**/node_modules/**"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
+          aws-region: ${{ inputs.region }}
+          role-to-assume: ${{ secrets.AWS_CICD_ROLE }}
+          role-duration-seconds: 1800
+          role-session-name: GitActionDeploymentSession
+
+      - name: Prerequisite Installation
+        run: npm install -g aws-cdk esbuild
+      - name: Check cdk synth
+        run: |
+          cd cdk;
+          chmod 700 synth.sh
+          ./synth.sh
+        env:
+          GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  final-check:
+    name: Final check
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [build, typescript-check, linter-check, test-check, synth-check]
+    steps:
+      - name: echo
+        run: |
+          # Build result
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            exit 1
+          fi
+          # Typescript result
+          if [[ "${{ needs.typescript-check.result }}" == "failure" ]]; then
+            exit 1
+          fi
+          # Linter result
+          if [[ "${{ needs.linter-check.result }}" == "failure" ]]; then
+            exit 1
+          fi
+          # Test result
+          if [[ "${{ needs.test-check.result }}" == "failure" ]]; then
+            exit 1
+          fi
+          # Synth result
+          if [[ "${{ needs.synth-check.result }}" == "failure" ]]; then
+            exit 1
+          fi
+          echo 'Finished :)'
