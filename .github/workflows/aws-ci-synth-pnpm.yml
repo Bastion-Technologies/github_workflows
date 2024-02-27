@@ -63,6 +63,7 @@ jobs:
           cache: "pnpm"
       - name: install dependencies
         run: |
+          npm i -g nx
           if [ -f "install.sh" ]
             then
                 echo "install.sh script found! running it";
