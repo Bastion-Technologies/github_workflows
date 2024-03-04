@@ -176,14 +176,6 @@ jobs:
         with:
           key: cache-${{ github.run_id }}-${{ github.run_attempt }}
           path: "**/node_modules/**"
-
-      - name: Run unit tests (NPM)
-        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'false' }}
-        run: |
-          npm test -- ${{ matrix.workspace }} --passWithNoTests;
-        env:
-          NODE_OPTIONS: "--max_old_space_size=4096"
-
       - name: Cache Tests (NX)
         if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' && inputs.enable-nx-cache == true }}
         uses: actions/cache@v3
@@ -192,8 +184,12 @@ jobs:
           key: cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-${{ github.sha }}
           restore-keys: |
             cache-nx-${{ github.ref_name }}-${{ matrix.workspace }}-
-            cache-nx-${{ github.ref_name }}-
-            cache-nx-
+      - name: Run unit tests (NPM)
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'false' }}
+        run: |
+          npm test -- ${{ matrix.workspace }} --passWithNoTests;
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
       - uses: nrwl/nx-set-shas@v3
         if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }} 
       - name: Run unit tests (NX)
