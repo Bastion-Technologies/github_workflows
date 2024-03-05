@@ -38,10 +38,6 @@ jobs:
     uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
 
   build:
-    defaults:
-      run:
-        working-directory: ./cdk
-
     name: Build
 
     runs-on: ubuntu-latest
@@ -60,14 +56,15 @@ jobs:
           registry-url: https://npm.pkg.github.com/
       - name: install dependencies
         run: |
-          if [ -f "install.sh" ]
+          if [ -f "cdk/install.sh" ]
             then
                 echo "install.sh script found! running it";
-                chmod 700 install.sh
-                ./install.sh
+                cd cdk;
+                chmod 700 install.sh;
+                ./install.sh;
+                cd ..;
             else
                echo "install.sh script NOT found! running `npm ci`";
-               cd ..;
                npm ci;
           fi
         env:
