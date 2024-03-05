@@ -52,12 +52,13 @@ jobs:
                 chmod 700 install.sh
                 ./install.sh
             else
-               echo "install.sh script NOT found! running `npm ci`";
+               echo "install.sh script NOT found! running npm ci";
                npm ci;
           fi
         env:
           GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ./cdk
 
       - name: Check unused dependencies
         id: unused-dependencies-check
