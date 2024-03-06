@@ -27,6 +27,10 @@ jobs:
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' }}
 
+    defaults:
+      run:
+        working-directory: ./cdk
+
     steps:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
