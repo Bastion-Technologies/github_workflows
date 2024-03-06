@@ -78,8 +78,6 @@ jobs:
 
       - name: Build & Deploy
         run: |
-          cd $GITHUB_WORKSPACE
-          ls -a
           chmod 700 deploy.sh
           ./deploy.sh
         env:
