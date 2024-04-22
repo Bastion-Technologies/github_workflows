@@ -190,7 +190,7 @@ jobs:
           IS_PROJECT_AFFECTED=$(npx nx show projects --affected --with-target test | grep -q $PROJECT && echo "true" || echo "false")
           if [ $IS_PROJECT_AFFECTED == "true" ]
             then
-                npx nx test $PROJECT --passWithNoTests;
+            NX_REJECT_UNKNOWN_LOCAL_CACHE=0 npx nx test $PROJECT --passWithNoTests;
             else
                echo "Project not affected, skipping tests";
           fi
