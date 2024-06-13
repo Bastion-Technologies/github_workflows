@@ -106,6 +106,12 @@ jobs:
       - name: Linter checking
         run: |
           npm run lint --workspaces --if-present --include-workspace-root;
+      - name: Run manta verify
+        run: |
+          if [ -f "cdk/package.json" ]
+            then
+              npm run -w cdk --if-present manta:verify;
+          fi
 
   list-workspaces:
     name: List workspaces
