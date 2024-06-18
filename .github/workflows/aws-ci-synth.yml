@@ -21,6 +21,10 @@ on:
       AWS_CICD_SECRET_KEY:
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # sast:
   #   name: SAST Check
