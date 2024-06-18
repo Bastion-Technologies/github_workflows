@@ -21,9 +21,10 @@ on:
         required: true
       SLACK_WEBHOOK:
         required: false
+
 concurrency:
   group: build-${{ inputs.stack }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
