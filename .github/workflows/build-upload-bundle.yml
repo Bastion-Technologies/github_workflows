@@ -3,7 +3,7 @@ name: Build and upload bundles
 on:
     workflow_call:
         inputs:
-            bundle-path: 
+            bundle-path:
                 required: true
                 type: string
             repo-name:
@@ -35,7 +35,7 @@ on:
                 required: true
             SLACK_WEBHOOK_PROD:
                 required: true
-  
+
 
 jobs:
     deploy:
@@ -70,7 +70,7 @@ jobs:
                   cache-dependency-path: "**/package-lock.json"
                   registry-url: https://npm.pkg.github.com/
             - name: Prerequisite Installation
-              run: npm install -g aws-cdk esbuild
+              run: npm install -g aws-cdk esbuild@^0.23.0
 
             - name: install dependencies
               run: |

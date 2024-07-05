@@ -192,7 +192,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
       - uses: nrwl/nx-set-shas@v3
-        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }} 
+        if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }}
       - name: Run unit tests (NX)
         if: ${{ needs.check-if-nx-workspace.outputs.isNxWorkspace == 'true' }}
         run: |
@@ -256,7 +256,7 @@ jobs:
           role-session-name: GitActionDeploymentSession
 
       - name: Prerequisite Installation
-        run: npm install -g aws-cdk esbuild
+        run: npm install -g aws-cdk esbuild@^0.23.0
       - name: Check cdk synth
         run: |
           cd cdk;
