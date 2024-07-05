@@ -46,7 +46,7 @@ jobs:
           role-session-name: GitActionDeploymentSession
 
       - name: Prerequisite Installation
-        run: npm install -g aws-cdk esbuild
+        run: npm install -g aws-cdk esbuild@^0.23.0
 
       - name: install dependencies
         run: |
