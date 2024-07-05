@@ -19,6 +19,10 @@ on:
       SLACK_WEBHOOK:
         required: false
 
+concurrency:
+  group: aws-ci
+  cancel-in-progress: true
+
 jobs:
   deploy:
     name: Build And Deploy
