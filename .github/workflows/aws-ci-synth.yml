@@ -40,12 +40,14 @@ jobs:
   sast:
     name: SAST
     uses: Bastion-Technologies/github_workflows/.github/workflows/sast.yml@main
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
 
   build:
     name: Build
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
 
     steps:
       - name: Checkout
@@ -81,6 +83,7 @@ jobs:
     name: Typescript checking
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
     steps:
       - name: Checkout
@@ -98,6 +101,7 @@ jobs:
     name: Linter checking
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
     steps:
       - name: Checkout
@@ -120,6 +124,7 @@ jobs:
   list-workspaces:
     name: List workspaces
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -140,6 +145,7 @@ jobs:
   check-if-nx-workspace:
     name: Check if NX Workspace
     runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
     outputs:
       isNxWorkspace: ${{ steps.is-nx-workspace.outputs.isNxWorkspace }}
     steps:
@@ -163,6 +169,7 @@ jobs:
     name: Run unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build, list-workspaces, check-if-nx-workspace]
     strategy:
       matrix:
@@ -210,7 +217,7 @@ jobs:
   has-cdk-changed:
     name: Has CDK changed
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') }}
     outputs:
       CDK_CHANGED: ${{ steps.check-if-cdk-changed.outputs.CDK_CHANGED }}
     steps:
@@ -228,7 +235,7 @@ jobs:
     name: CDK Synth
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ github.actor != 'dependabot[bot]' && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true' }}
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true' }}
     needs: [build, has-cdk-changed]
     steps:
       - name: Checkout

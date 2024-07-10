@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   check-unused-dependencies:
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
