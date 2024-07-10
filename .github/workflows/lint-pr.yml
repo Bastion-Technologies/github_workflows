@@ -31,7 +31,6 @@ jobs:
             ci
             chore
             revert
-            Lokalise
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
