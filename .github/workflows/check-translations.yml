@@ -6,18 +6,22 @@ on:
       translations-path:
         required: true
         type: string
+        description: "Path to the translations directory"
       source-lang:
         required: false
         type: string
         default: "en"
+        description: "Source language"
       target-langs:
         required: false
         type: string
         default: "fr,de"
+        description: "Target languages"
       ignore-many:
         required: false
         type: boolean
         default: true
+        description: "Ignore keys ending with '_many'"
 
 permissions:
   contents: read
@@ -29,7 +33,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Check
+      - name: Validate
         run: |
           if [ ! -d "${{ inputs.translations-path }}" ]; then
             echo "Translations path does not exist: $TRANSLATION_PATH"
@@ -154,7 +158,6 @@ jobs:
 
             exit 1
           fi
-
 
       - name: Post Missing Translations Report
         if: ${{ always() && steps.check_missing_translations.conclusion == 'failure' }}
