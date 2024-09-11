@@ -168,7 +168,12 @@ jobs:
             > [!WARNING]
             > Please add the missing translations in the following files:
 
+            <details open>
+            <summary><h2>Missing Translations</h2></summary>
+
             ${{ steps.check_missing_translations.outputs.failures }}
+
+            </details>
             
       - name: Delete Missing Translations Report
         if: ${{ always() && steps.check_missing_translations.conclusion == 'success' }}
@@ -190,7 +195,12 @@ jobs:
             > [!WARNING]
             > Please remove the outdated translations in the following files:
 
+            <details open>
+            <summary><h2>Outdated Translations</h2></summary>
+
             ${{ steps.check_outdated_translations.outputs.failures }}
+
+            </details>
 
       - name: Delete Outdated Translations Report
         if: ${{ always() && steps.check_outdated_translations.conclusion == 'success' }}
