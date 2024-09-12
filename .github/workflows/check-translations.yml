@@ -1,0 +1,213 @@
+name: Check Translations
+
+on:
+  workflow_call:
+    inputs:
+      translations-path:
+        required: true
+        type: string
+        description: "Path to the translations directory"
+      source-lang:
+        required: false
+        type: string
+        default: "en"
+        description: "Source language"
+      target-langs:
+        required: false
+        type: string
+        default: "fr,de"
+        description: "Target languages"
+      ignore-many:
+        required: false
+        type: boolean
+        default: true
+        description: "Ignore keys ending with '_many'"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-translations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Validate
+        run: |
+          if [ ! -d "${{ inputs.translations-path }}" ]; then
+            echo "Translations path does not exist: $TRANSLATION_PATH"
+            exit 1
+          fi
+      - name: Get source files
+        id: get_source_files
+        run: |
+          source_files=$(find ${{ inputs.translations-path }}/${{ inputs.source-lang }} -type f -name '*.json' | sort -u | tr '\n' ',')
+          echo "source_files=${source_files%,}" >> "$GITHUB_OUTPUT"
+      - name: Check missing translations
+        id: check_missing_translations
+        if: always()
+        run: |
+          source_files=$(echo "${{ steps.get_source_files.outputs.source_files }}" | tr ',' '\n')
+          target_langs=$(echo "${{ inputs.target-langs }}" | tr ',' ' ')
+
+          touch missing_translations.txt
+
+          for source_file in $source_files; do
+            base_file=$(basename "$source_file")
+            source_keys=$(jq -r 'paths | map(tostring) | join(".")' "$source_file" | sort -u)
+            header_exists=false
+
+            echo -e "\n-- Checking file $base_file --\n"
+
+            for lang in $target_langs; do
+              error=""
+              target_file="${{ inputs.translations-path}}/$lang/$base_file"
+
+              if [ -f "$target_file" ]; then
+                target_keys=$(jq -r 'paths | map(tostring) | join(".")' "$target_file" | sort -u)
+                missing_translations=$(comm -23 <(echo "$source_keys") <(echo "$target_keys"))
+
+                if [ -n "$missing_translations" ]; then
+                  error="Missing translations in $lang for file $base_file:\n$missing_translations"
+                  formatted_error="Missing translations in $lang for file $base_file:\n\`\`\`\n$missing_translations\n\`\`\`"
+                else
+                  echo "✅ No missing translations in $lang for file $base_file."
+                fi
+              else
+                error="Translation file $base_file does not exist in $lang."
+                formatted_error=$error
+              fi
+
+              if [ -n "$error" ]; then
+                echo -e "❌ $error"
+
+                if [ "$header_exists" = false ]; then
+                  echo "## $base_file" >> missing_translations.txt
+                  header_exists=true
+                fi
+                echo -e "### $formatted_error" >> missing_translations.txt
+              fi
+            done
+          done
+
+          if [ -s missing_translations.txt ]; then
+            echo "failures<<EOF" >> "$GITHUB_OUTPUT"
+            cat missing_translations.txt >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+
+            exit 1
+          fi
+
+      - name: Check outdated translations
+        id: check_outdated_translations
+        if: always()
+        run: |
+          source_files=$(echo "${{ steps.get_source_files.outputs.source_files }}" | tr ',' '\n')
+          target_langs=$(echo "${{ inputs.target-langs }}" | tr ',' ' ')
+
+          touch outdated_translations.txt      
+
+          for source_file in $source_files; do
+            base_file=$(basename "$source_file")
+            source_keys=$(jq -r 'paths | map(tostring) | join(".")' "$source_file" | sort -u)
+            header_exists=false
+
+            echo -e "\n-- Checking file $base_file --\n"
+
+            for lang in $target_langs; do
+              error=""
+              target_file="${{ inputs.translations-path}}/$lang/$base_file"
+
+              if [ -f "$target_file" ]; then
+                target_keys=$(jq -r 'paths | map(tostring) | join(".")' "$target_file" | sort -u)
+                outdated_translations=$(comm -13 <(echo "$source_keys") <(echo "$target_keys"))
+
+                if [ "${{ inputs.ignore-many }}" = true ]; then
+                  outdated_translations=$(echo "$outdated_translations" | grep -v "_many$" || true)
+                fi
+
+                if [ -n "$outdated_translations" ]; then
+                  error="Outdated translations in $lang for file $base_file:\n$outdated_translations"
+                  formatted_error="Outdated translations in $lang for file $base_file:\n\`\`\`\n$outdated_translations\n\`\`\`"
+                else
+                  echo "✅ No outdated translations in $lang for file $base_file."
+                fi
+              else
+                error="Translation file $base_file does not exist in $lang."
+                formatted_error=$error
+              fi
+
+              if [ -n "$error" ]; then
+                echo -e "❌ $error"
+  
+                if [ "$header_exists" = false ]; then
+                  echo "## $base_file" >> outdated_translations.txt
+                  header_exists=true
+                fi
+
+                echo -e "### $formatted_error" >> outdated_translations.txt
+              fi
+            done
+          done
+
+          if [ -s outdated_translations.txt ]; then
+            echo "failures<<EOF" >> "$GITHUB_OUTPUT"
+            cat outdated_translations.txt >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+
+            exit 1
+          fi
+
+      - name: Post Missing Translations Report
+        if: ${{ always() && steps.check_missing_translations.conclusion == 'failure' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: missing-translations
+          message: |
+            <!-- bot:translationscheck -->
+            # MISSING TRANSLATION FOUND !
+
+            > [!WARNING]
+            > Please add the missing translations in the following files:
+
+            <details open>
+            <summary><h2>Missing Translations</h2></summary>
+
+            ${{ steps.check_missing_translations.outputs.failures }}
+
+            </details>
+            
+      - name: Delete Missing Translations Report
+        if: ${{ always() && steps.check_missing_translations.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: missing-translations
+          delete: true
+
+
+      - name: Post Outdated Translations Report
+        if: ${{ always() && steps.check_outdated_translations.conclusion == 'failure' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: outdated-translations
+          message: |
+            <!-- bot:translationscheck -->
+            # OUTDATED TRANSLATION FOUND !
+
+            > [!WARNING]
+            > Please remove the outdated translations in the following files:
+
+            <details open>
+            <summary><h2>Outdated Translations</h2></summary>
+
+            ${{ steps.check_outdated_translations.outputs.failures }}
+
+            </details>
+
+      - name: Delete Outdated Translations Report
+        if: ${{ always() && steps.check_outdated_translations.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: outdated-translations
+          delete: true
