@@ -140,7 +140,10 @@ jobs:
         run: |
           WORKSPACES=$(npm query .workspace | jq -r '.[].location' | jq --raw-input --slurp 'split("\n")' | jq 'del(.[] | select(. == ""))')
           echo 'found workspaces: '$WORKSPACES
-          echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
+
+          if [ "$WORKSPACES" != "[]" ]; then
+            echo "matrix="$WORKSPACES >> $GITHUB_OUTPUT
+          fi
 
   check-if-nx-workspace:
     name: Check if NX Workspace
@@ -169,7 +172,7 @@ jobs:
     name: Run unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ !startsWith(github.head_ref, 'weblate') }}
+    if: ${{ !startsWith(github.head_ref, 'weblate')  && needs.list-workspaces.outputs.matrix }}
     needs: [build, list-workspaces, check-if-nx-workspace]
     strategy:
       matrix:
