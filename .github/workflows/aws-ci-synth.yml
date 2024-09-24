@@ -28,7 +28,7 @@ concurrency:
 jobs:
   # sast:
   #   name: SAST Check
-  #   runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+  #   runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
   #   steps:
   #     - uses: actions/checkout@v3
   #     - name: Run Report
@@ -45,7 +45,7 @@ jobs:
   build:
     name: Build
 
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     timeout-minutes: 30
     if: ${{ !startsWith(github.head_ref, 'weblate') }}
 
@@ -81,7 +81,7 @@ jobs:
 
   typescript-check:
     name: Typescript checking
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     timeout-minutes: 30
     if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
@@ -99,7 +99,7 @@ jobs:
 
   linter-check:
     name: Linter checking
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     timeout-minutes: 30
     if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
@@ -123,7 +123,7 @@ jobs:
 
   list-workspaces:
     name: List workspaces
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     if: ${{ !startsWith(github.head_ref, 'weblate') }}
     needs: [build]
     outputs:
@@ -147,7 +147,7 @@ jobs:
 
   check-if-nx-workspace:
     name: Check if NX Workspace
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     if: ${{ !startsWith(github.head_ref, 'weblate') }}
     outputs:
       isNxWorkspace: ${{ steps.is-nx-workspace.outputs.isNxWorkspace }}
@@ -170,7 +170,7 @@ jobs:
 
   test-check:
     name: Run unit tests
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     timeout-minutes: 30
     if: ${{ !startsWith(github.head_ref, 'weblate')  && needs.list-workspaces.outputs.matrix }}
     needs: [build, list-workspaces, check-if-nx-workspace]
@@ -219,7 +219,7 @@ jobs:
 
   has-cdk-changed:
     name: Has CDK changed
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') }}
     outputs:
       CDK_CHANGED: ${{ steps.check-if-cdk-changed.outputs.CDK_CHANGED }}
@@ -236,7 +236,7 @@ jobs:
           echo "CDK_CHANGED=$hasChanged" >> "$GITHUB_OUTPUT"
   synth-check:
     name: CDK Synth
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     timeout-minutes: 30
     if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') && needs.has-cdk-changed.outputs.CDK_CHANGED == 'true' }}
     needs: [build, has-cdk-changed]
@@ -277,7 +277,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   final-check:
     name: Final check
-    runs-on: [runs-on,runner=2cpu-linux-x64,"run-id=${{ github.run_id }}"]
+    runs-on: [runs-on,runner=4cpu-linux-x64,"run-id=${{ github.run_id }}"]
     if: always()
     needs: [build, typescript-check, linter-check, test-check, synth-check]
     steps:
