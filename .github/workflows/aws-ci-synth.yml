@@ -16,7 +16,7 @@ on:
       runs-on:
         required: false
         type: string
-        default: "ubuntu-latest"
+        default: ubuntu-latest
     secrets:
       AWS_CICD_ROLE:
         required: true
