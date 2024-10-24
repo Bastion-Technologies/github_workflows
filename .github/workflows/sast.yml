@@ -7,51 +7,9 @@ jobs:
     name: Scan
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
-    container:
-      image: returntocorp/semgrep
 
     steps:
       - name: clone application source code
         uses: actions/checkout@v3
-
-      - name: Scan changes
-        run: |
-          semgrep ci --config="p/default" --json --output report.json --metrics=off
-
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: report.json
-          path: report.json
-
-  report:
-    name: Report
-    runs-on: ubuntu-latest
-    needs: ["scan"]
-    if: failure()
-
-    steps:
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18.19.0"
-          registry-url: https://npm.pkg.github.com/
-
-      - name: clone application source code
-        uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: report.json
-
-      - name: Setup node
-        run: |
-          rm package.json package-lock.json
-          npm i -D @bastion-technologies/semgrep-gha
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Report results
-        run: |
-          npx semgrep-gha
+      - name: run sast
+        uses: Bastion-Technologies/gh-action-run-sast@v1
