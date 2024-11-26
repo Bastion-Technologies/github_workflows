@@ -17,6 +17,10 @@ on:
         required: false
         type: string
         default: ubuntu-latest
+      needs-qemu:
+        required: false
+        type: boolean
+        default: false
     secrets:
       AWS_CICD_ROLE:
         required: true
@@ -249,6 +253,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up QEMU
+        if: ${{ inputs.needs-qemu == true }}
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
