@@ -16,6 +16,10 @@ on:
                 required: false
                 type: string
                 default: "./cdk"
+            needs-qemu:
+              required: false
+              type: boolean
+              default: false
             notify-slack:
                 required: false
                 type: boolean
@@ -59,6 +63,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Set up QEMU
+              if: ${{ inputs.needs-qemu == true }}
               uses: docker/setup-qemu-action@v3
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3

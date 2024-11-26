@@ -6,6 +6,10 @@ on:
       region:
         required: true
         type: string
+      needs-qemu:
+        required: false
+        type: boolean
+        default: false
       notify-slack:
         required: false
         type: boolean
@@ -48,6 +52,7 @@ jobs:
         # Add support for more platforms with QEMU (optional)
         # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
+        if: ${{ inputs.needs-qemu == true }}
         uses: docker/setup-qemu-action@v2
   
       - name: Set up Docker Buildx
