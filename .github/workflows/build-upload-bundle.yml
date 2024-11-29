@@ -70,7 +70,7 @@ jobs:
             - name: Setup NodeJS
               uses: actions/setup-node@v4
               with:
-                  node-version: "18.19.0"
+                  node-version: "22.11.0"
                   cache: "npm"
                   cache-dependency-path: "**/package-lock.json"
                   registry-url: https://npm.pkg.github.com/
