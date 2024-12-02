@@ -10,6 +10,6 @@ jobs:
 
     steps:
       - name: clone application source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: run sast
         uses: Bastion-Technologies/gh-action-run-sast@v1

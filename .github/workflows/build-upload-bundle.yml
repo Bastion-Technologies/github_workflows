@@ -92,7 +92,7 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Configure AWS credentials for build
-              uses: aws-actions/configure-aws-credentials@v2
+              uses: aws-actions/configure-aws-credentials@v4
               with:
                   aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
                   aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
@@ -108,7 +108,7 @@ jobs:
                   GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Configure AWS credentials for upload
-              uses: aws-actions/configure-aws-credentials@v2
+              uses: aws-actions/configure-aws-credentials@v4
               with:
                   aws-access-key-id: ${{ secrets.AWS_CICD_ACCESS_KEY }}
                   aws-secret-access-key: ${{ secrets.AWS_CICD_SECRET_KEY }}
