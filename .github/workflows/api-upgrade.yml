@@ -52,6 +52,13 @@ jobs:
           API=${{ inputs.workspace || inputs.api || '' }}
           TAG=${API:+$API-}$CURRENT_VERSION
 
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
+          else
+            echo "Tag $TAG does not exist"
+            noTag=1
+          fi
+
           git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
 
           if [ $isDiff -eq 0 ]; then
@@ -59,6 +66,9 @@ jobs:
           elif [ $isDiff -eq 128 ]; then
             echo "Diff error"
             exit 1
+          elif [ $noTag ]; then
+            echo "No tag"
+            isDiff=1
           else
             echo "Changes detected"
           fi
