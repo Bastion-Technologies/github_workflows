@@ -102,6 +102,7 @@ jobs:
                   role-session-name: GitActionDeploymentSession
             - name: Build
               run: |
+                  export BASTION_RELEASE_VERSION="${{ inputs.tag-version }}"
                   chmod 700 build.sh
                   ./build.sh ${{ matrix.environment }};
               env:
