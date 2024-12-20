@@ -24,6 +24,10 @@ on:
                 required: false
                 type: boolean
                 default: true
+            use-lfs:
+                required: false
+                type: boolean
+                default: false
         secrets:
             AWS_STAGING_ROLE:
                 required: true
@@ -62,6 +66,8 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+              with:
+                lfs: ${{ inputs.use-lfs }}
             - name: Set up QEMU
               if: ${{ inputs.needs-qemu == true }}
               uses: docker/setup-qemu-action@v3
