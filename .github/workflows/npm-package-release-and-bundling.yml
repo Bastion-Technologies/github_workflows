@@ -28,7 +28,7 @@ jobs:
   trigger-bundling:
     needs: release-api
     if: needs.release-api.outputs.isdiff == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Call tag-bundle-to-s3
         uses: actions/github-script@v5

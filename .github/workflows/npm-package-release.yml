@@ -19,7 +19,7 @@ on:
 
 jobs:
   should-publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       isdiff: ${{ steps.check.outputs.isdiff }}
     steps:
@@ -52,7 +52,7 @@ jobs:
   publish-npm:
     needs: should-publish
     if: needs.should-publish.outputs.isdiff == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       version: ${{ steps.package-version.outputs.current-version }}
     steps:

@@ -11,7 +11,7 @@ jobs:
 
     name: Validate PR Title
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     if: ${{ github.actor != 'dependabot[bot]' }}
 

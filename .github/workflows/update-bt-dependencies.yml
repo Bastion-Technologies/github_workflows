@@ -9,7 +9,7 @@ on:
 jobs:
   update-bt-dependencies:
     name: Update BT Dependencies
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # Runs only for merged Dependabot PRs updating a Bastion API
     if: ${{ contains(github.head_ref, 'dependabot') && contains(github.head_ref, 'bastion-technologies') && github.event.pull_request.merged == true }}
 
