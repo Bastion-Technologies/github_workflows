@@ -21,7 +21,7 @@ on:
 
 jobs:
   merge-pull-request:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Query Nautilus to merge a PR
         run: |

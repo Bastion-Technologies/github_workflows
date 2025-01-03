@@ -24,7 +24,7 @@ permissions:
 jobs:
   main:
     name: Upgrade
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     env:
       API: ${{ inputs.api || 'api' }}

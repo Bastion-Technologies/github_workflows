@@ -16,7 +16,7 @@ on:
       runs-on:
         required: false
         type: string
-        default: ubuntu-latest
+        default: ubuntu-22.04
       needs-qemu:
         required: false
         type: boolean

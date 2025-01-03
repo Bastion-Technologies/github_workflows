@@ -8,7 +8,7 @@ on:
 
 jobs:
   check-if-changed:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       isdiff: ${{ steps.check.outputs.isdiff }}
     steps:
@@ -28,7 +28,7 @@ jobs:
   notify-if-changed:
     needs: check-if-changed
     if: needs.check-if-changed.outputs.isdiff == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -80,7 +80,7 @@ jobs:
   check-api-breaking-changes:
     needs: check-if-changed
     if: needs.check-if-changed.outputs.isdiff == 'yes'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
