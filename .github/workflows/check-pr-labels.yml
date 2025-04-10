@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Do not have do_not_merge label
       run: |
-        if [[ "${{ github.event.pull_request.labels }}" == *"do_not_merge"* ]]; then
+        if [[ "${{ github.event.pull_request.labels }}" == *"do_not_merge"* || "${{ github.event.pull_request.labels }}" == *"do not merge"* ]]; then
             echo "PR has do_not_merge label"
             exit 1
         else
