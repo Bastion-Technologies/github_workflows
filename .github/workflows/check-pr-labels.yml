@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Do not have do_not_merge label
       run: |
-        labels=$(echo "${{ toJson(github.event.pull_request.labels) }}" | jq -r '.[].name')
+        labels=$(echo '${{ toJson(github.event.pull_request.labels) }}' | jq -r '.[].name')
 
         echo "Labels: $labels"
 
