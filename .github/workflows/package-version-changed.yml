@@ -43,10 +43,10 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/"${{inputs.library-name}}"'')" >> $GITHUB_ENV'
+        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
       - run: "git checkout main"
       - name: "main version of library"
-        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/"${{inputs.library-name}}"'')" >> $GITHUB_ENV'
+        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
       - name: "compare version"
         run: |
           if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
