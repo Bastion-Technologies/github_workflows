@@ -43,10 +43,10 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/${{ inputs.library-name }} | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/"${{inputs.library-name}}"'')" >> $GITHUB_ENV'
       - run: "git checkout main"
       - name: "main version of library"
-        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/${{ inputs.library-name }} | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/"${{inputs.library-name}}"'')" >> $GITHUB_ENV'
       - name: "compare version"
         run: |
           if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
@@ -90,14 +90,14 @@ jobs:
         run: |
           mkdir -p ./.tmp
 
-          API_FILE_PATH=$(find . -name ${{ inputs.library-name }}.yaml)
+          API_FILE_PATH=$(find . -name "${{ inputs.library-name }}".yaml)
 
-          git show origin/main:$API_FILE_PATH > ./.tmp/${{ inputs.library-name }}-base.yaml
-          cp -p $API_FILE_PATH ./.tmp/${{ inputs.library-name }}-revision.yaml
+          git show origin/main:$API_FILE_PATH > ./.tmp/"${{ inputs.library-name }}"-base.yaml
+          cp -p $API_FILE_PATH ./.tmp/"${{ inputs.library-name }}"-revision.yaml
       - name: Check API breaking changes
         id: oasdiff
         run: |
-          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/${{ inputs.library-name }}-base.yaml /apis/${{ inputs.library-name }}-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"${{ inputs.library-name }}"-base.yaml /apis/"${{ inputs.library-name }}"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
 
           if [ $exitCode -eq 0 ]; then
             exit 0
