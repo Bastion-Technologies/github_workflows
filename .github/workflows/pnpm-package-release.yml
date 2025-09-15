@@ -1,0 +1,86 @@
+name: Release PNPM library on GHP
+
+on:
+  workflow_call:
+    inputs:
+      library-name:
+        required: true
+        type: string
+      package-json-dir-path:
+        required: true
+        type: string
+    outputs:
+      isdiff:
+        description: "If the version changed"
+        value: ${{ jobs.should-publish.outputs.isdiff }}
+      version:
+        description: "The version of the package that was published"
+        value: ${{ jobs.publish-pnpm.outputs.version }}
+
+jobs:
+  should-publish:
+    runs-on: ubuntu-22.04
+    outputs:
+      isdiff: ${{ steps.check.outputs.isdiff }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.11.0"
+          cache: "pnpm"
+          cache-dependency-path: "**/pnpm-lock.yaml"
+          registry-url: https://npm.pkg.github.com/
+
+      - name: "current version of library"
+        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+      - run: "git checkout ${{ github.event.before }}"
+      - name: "pervious version of library"
+        run: 'echo "PREVIOUS=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+      - name: "compare version"
+        id: "check"
+        run: |
+          if [ "${{env.PREVIOUS}}" = "${{env.CURRENT}}" ]; then
+            echo version did not change main: ${{env.PREVIOUS}}, current: ${{env.CURRENT}};
+            echo "isdiff=no" >> "$GITHUB_OUTPUT";
+          else
+            echo "isdiff=yes" >> "$GITHUB_OUTPUT";
+          fi
+
+  publish-pnpm:
+    needs: should-publish
+    if: needs.should-publish.outputs.isdiff == 'yes'
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.11.0"
+          registry-url: https://npm.pkg.github.com/
+      - name: "Install dependencies"
+        run: pnpm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Publish package"
+        run: pnpm publish -r --filter=@bastion-technologies/${{ inputs.library-name }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: get-npm-version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@v1.3.1
+        with:
+          path: '${{ inputs.package-json-dir-path }}'
+      - name: Create tag repository
+        uses: actions/github-script@v5
+        with:
+          script: |
+            github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: 'refs/tags/${{ inputs.library-name }}-${{ steps.package-version.outputs.current-version}}',
+              sha: context.sha
+            })
