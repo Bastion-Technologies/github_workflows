@@ -1,0 +1,119 @@
+name: "API Upgrade"
+
+on:
+  workflow_call:
+    inputs:
+      api:
+        type: string
+        description: "API to upgrade"
+        required: false
+      workspace:
+        type: string
+        description: "Workspace name of the API"
+        required: false
+    secrets:
+      NAUTILUS_SHARED_SECRET:
+        description: "Shared secret for Nautilus"
+        required: true
+
+permissions:
+  pull-requests: write
+  contents: write
+  packages: read
+
+jobs:
+  main:
+    name: Upgrade
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    env:
+      API: ${{ inputs.api || 'api' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up package.json path
+        id: package
+        run: |
+          if [ ${{ inputs.workspace || inputs.api }} ]; then
+            path=$(pnpm --filter=@bastion-technologies/${{ inputs.workspace || inputs.api }} exec pwd)/package.json
+          else
+            path=$(pwd)/package.json
+          fi
+
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+      - name: Should upgrade
+        id: should_upgrade
+        run: |
+          CURRENT_VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
+          echo "Current version is $CURRENT_VERSION"
+
+          API=${{ inputs.workspace || inputs.api || '' }}
+          TAG=${API:+$API-}$CURRENT_VERSION
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            git diff --exit-code --no-patch $TAG HEAD pnpm-lock.yaml && isDiff=$? || isDiff=$?
+          else
+            echo "Tag $TAG does not exist"
+            noTag=1
+          fi
+
+          git diff --exit-code --no-patch $TAG HEAD pnpm-lock.yaml && isDiff=$? || isDiff=$?
+
+          if [ $isDiff -eq 0 ]; then
+            echo "No changes detected"
+          elif [ $isDiff -eq 128 ]; then
+            echo "Diff error"
+            exit 1
+          elif [ $noTag ]; then
+            echo "No tag"
+            isDiff=1
+          else
+            echo "Changes detected"
+          fi
+
+          echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
+      - name: Run upgrade
+        if: steps.should_upgrade.outputs.isDiff == 1
+        id: upgrade
+        run: |
+          if [ ${{ inputs.workspace || inputs.api }} ]; then
+            cd $(pnpm --filter=@bastion-technologies/${{ inputs.workspace || inputs.api }} exec pwd)
+            SCRIPT="pnpm version patch --no-git-tag-version"
+          else
+            SCRIPT="pnpm version patch --no-git-tag-version"
+          fi
+
+          git config --global user.name "nautilus-bot"
+          git config --global user.email "nautilus-bot@users.noreply.github.com"
+
+          echo "Running $SCRIPT"
+          $SCRIPT
+
+          VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
+          UPGRADE_BRANCH=upgrade-${{env.API}}-$VERSION
+          echo "Upgraded ${{ env.API }} to version $VERSION"
+
+          git switch -c "$UPGRADE_BRANCH"
+          git commit -am "chore: Upgrade ${{ env.API }} to $VERSION"
+          git push --set-upstream origin "$UPGRADE_BRANCH" --force
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "upgrade_branch=$UPGRADE_BRANCH" >> "$GITHUB_OUTPUT"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create pull request
+        if: steps.should_upgrade.outputs.isDiff == 1
+        id: create_pull_request
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: "https://dev.bastion.tech/api/nautilus/pr"
+          method: POST
+          customHeaders: '{"x-shared-secret": "${{ secrets.NAUTILUS_SHARED_SECRET }}"}'
+          data: '{"repo": "${{ github.repository }}", "base": "main", "head": "${{ steps.upgrade.outputs.upgrade_branch }}", "title": "chore(deps): [🐚/Automatic Upgrade] Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}", "body": "Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}" }'
+      - name: Auto approve
+        if: steps.should_upgrade.outputs.isDiff == 1
+        uses: hmarr/auto-approve-action@v4
+        with:
+          pull-request-number: ${{ fromJson(steps.create_pull_request.outputs.response).response.data.number }}

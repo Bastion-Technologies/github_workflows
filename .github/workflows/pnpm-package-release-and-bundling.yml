@@ -1,0 +1,43 @@
+name: Release PNPM library on GHP and triggers bundling & upload to S3
+
+on:
+  workflow_call:
+    inputs:
+      library-name:
+        required: true
+        type: string
+      package-json-dir-path:
+        required: true
+        type: string
+
+
+permissions:
+  actions: write
+  contents: write
+  packages: write
+
+jobs:
+  release-api:
+    uses: Bastion-Technologies/github_workflows/.github/workflows/pnpm-package-release.yml@main
+    name: Release API
+    secrets: inherit
+    with:
+      library-name: ${{ inputs.library-name }}
+      package-json-dir-path: ${{ inputs.package-json-dir-path }}
+
+  trigger-bundling:
+    needs: release-api
+    if: needs.release-api.outputs.isdiff == 'yes'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Call tag-bundle-to-s3
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const tagName = "${{ inputs.library-name }}-${{ needs.release-api.outputs.version }}"
+            github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'tag-bundle-to-s3.yml',
+                ref: tagName
+            })

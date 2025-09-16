@@ -1,0 +1,167 @@
+name: Check if pnpm package version has changed (run 'pnpm run upgrade-api <patch|minor|major>')
+on:
+  workflow_call:
+    inputs:
+      library-name:
+        required: true
+        type: string
+
+jobs:
+  check-if-changed:
+    runs-on: ubuntu-22.04
+    outputs:
+      isdiff: ${{ steps.check.outputs.isdiff }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - id: check
+        name: git diff yaml definition change
+        run: |
+          git fetch origin main
+          api_file=$(find . -name ${{ inputs.library-name }}.yaml);
+          if git diff --exit-code origin/main -- $api_file; then
+            echo "isdiff=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "isdiff=yes" >> "$GITHUB_OUTPUT"
+          fi
+  notify-if-changed:
+    needs: check-if-changed
+    if: needs.check-if-changed.outputs.isdiff == 'yes'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.11.0"
+          cache: "pnpm"
+          cache-dependency-path: "**/pnpm-lock.yaml"
+          registry-url: https://npm.pkg.github.com/
+
+      - name: "current version of library"
+        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+      - run: "git checkout main"
+      - name: "main version of library"
+        run: 'echo "MAIN=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+      - name: "compare version"
+        run: |
+          if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
+            echo version did not change main: ${{env.MAIN}}, current: ${{env.CURRENT}};
+            echo "::error::Version of ${{ inputs.library-name}} has not been updated" && exit 1;
+          fi
+      - name: "Post comment on PR on failure"
+        if: ${{ failure() }}
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ if you want to update the library ${{ inputs.library-name }} please run pnpm run upgrade-api!'
+            })
+      - name: "Post comment on PR on success"
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "✅ You are updating library ${{ inputs.library-name }} to version ${{ env.CURRENT }}."
+            })
+
+  check-api-breaking-changes:
+    needs: check-if-changed
+    if: needs.check-if-changed.outputs.isdiff == 'yes'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Retrieve API definition file
+        run: |
+          mkdir -p ./.tmp
+
+          API_FILE_PATH=$(find . -name "${{ inputs.library-name }}".yaml)
+
+          git show origin/main:$API_FILE_PATH > ./.tmp/"${{ inputs.library-name }}"-base.yaml
+          cp -p $API_FILE_PATH ./.tmp/"${{ inputs.library-name }}"-revision.yaml
+      - name: Check API breaking changes
+        id: oasdiff
+        run: |
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"${{ inputs.library-name }}"-base.yaml /apis/"${{ inputs.library-name }}"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
+
+          if [ $exitCode -eq 0 ]; then
+            exit 0
+          fi
+
+          CHECKS_TO_IGNORE='
+            # Ignore new enum values warning, as we cant use x-extensible-enum because of AJV
+            "response-property-enum-value-added",
+
+            # Ignore sunset-related errors
+            "api-deprecated-sunset-parse",
+            "api-path-removed-before-sunset",
+            "api-path-sunset-parse",
+            "api-removed-before-sunset",
+            "api-sunset-date-changed-too-small",
+            "api-sunset-date-too-small",
+            "sunset-deleted"
+          '
+
+          echo "Original report: $(cat report | jq)"
+
+          # Removes the response-property-enum-value-added warning
+          REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id | IN('"$CHECKS_TO_IGNORE"') | not)]')
+
+          echo "Filtered report: $(echo $REPORT_FILTERED | jq)"
+
+          if echo "$REPORT_FILTERED" | jq -e 'length == 0'; then
+            echo "No remaining breaking change after filtering"
+            exit 0
+          fi
+
+          # Format and extract counts
+          REPORT_TEXT=$(echo "$REPORT_FILTERED" | jq -r '.[] | if .level == 2 then "warning" else "error" end + "\t[\(.id)] at \(.source)\n\tin API \(.operation) \(.path)\n\t\t\(.text)\n"')
+          WARNING_COUNT=$((echo "$REPORT_TEXT" | grep -c "^warning") || true)
+          ERROR_COUNT=$((echo "$REPORT_TEXT" | grep -c "^error") || true)
+          TOTAL_COUNT=$((WARNING_COUNT + ERROR_COUNT))
+          HEADER="$TOTAL_COUNT breaking change(s): $ERROR_COUNT error(s), $WARNING_COUNT warning(s)"
+
+          echo "HEADER=$HEADER" >> "$GITHUB_OUTPUT"
+          echo "REPORT<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$REPORT_TEXT" | head -n-1 >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          exit $exitCode
+
+      - name: Post oasdiff report
+        if: ${{ always() && steps.oasdiff.conclusion == 'failure' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: oasdiff
+          message: |
+            <!-- bot:oasdiff -->
+            # BREAKING CHANGES
+
+            > [!WARNING]
+            > Please fix the breaking changes before merging this PR or reach a GitHub admin to approve the breaking changes.
+
+            ## ${{ steps.oasdiff.outputs.HEADER }}
+            ```
+            ${{ steps.oasdiff.outputs.REPORT }}
+            ```
+      - name: Delete oasdiff report
+        if: ${{ always() && steps.oasdiff.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: oasdiff
+          delete: true

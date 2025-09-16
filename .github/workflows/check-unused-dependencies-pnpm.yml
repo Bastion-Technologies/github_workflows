@@ -1,0 +1,136 @@
+name: Check unused dependencies
+
+on:
+  workflow_call:
+    inputs:
+      skip-missing:
+        description: "Skip calculation of missing dependencies"
+        type: boolean
+        required: false
+        default: true
+      ignores:
+        description: "A comma separated array containing package names to ignore. It can be glob expressions. Example: eslint,babel-*"
+        type: string
+        required: false
+        default: ""
+      ignore-patterns:
+        description: "Comma separated patterns describing files to ignore. Patterns must match the .gitignore spec. Example: build/Release,dist,coverage,*.log"
+        type: string
+        required: false
+        default: ""
+      ignore-workspaces:
+        description: "A comma separated array containing workspace names to ignore. Example: docs,cdk"
+        type: string
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  packages: read
+
+jobs:
+  check-unused-dependencies:
+    if: ${{ github.actor != 'dependabot[bot]' && !startsWith(github.head_ref, 'weblate') }}
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.11.0"
+          cache: "pnpm"
+          cache-dependency-path: "**/pnpm-lock.yaml"
+          registry-url: https://npm.pkg.github.com/
+
+      - name: install dependencies
+        run: |
+          if [ -f "cdk/install.sh" ]
+            then
+              echo "install.sh script found! running it";
+              cd cdk;
+              chmod 700 install.sh;
+              ./install.sh;
+              cd ..
+            else
+              echo "install.sh script NOT found! running pnpm install";
+              pnpm install;
+          fi
+        env:
+          GH_PACKAGE_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check unused dependencies
+        id: unused-dependencies-check
+        run: |
+          pnpm install -g depcheck typescript
+
+          DEFAULT_IGNORES="esbuild, @side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite"
+          IGNORE_WORKSPACES_PATTERN=$(echo ${{ inputs.ignore-workspaces }} | sed 's/, */|/g')
+          WORKSPACES=$(pnpm exec --silent --workspaces --include-workspace-root --call 'pwd')
+
+          echo -e "\nIgnoring workspaces matching pattern: $IGNORE_WORKSPACES_PATTERN"
+
+          if [ -n "$IGNORE_WORKSPACES_PATTERN" ]; then
+            WORKSPACES=$(echo "$WORKSPACES" | grep -vE "$IGNORE_WORKSPACES_PATTERN$")
+          fi
+
+          HAS_ERROR=0
+
+          touch failures.txt
+
+          echo -e "Workspaces found:\n$WORKSPACES\n"
+
+          for workspace in $WORKSPACES; do
+            depcheck \
+              --skip-missing=${{ inputs.skip-missing }} \
+              --ignores="$DEFAULT_IGNORES,${{ inputs.ignores }}" \
+              --ignore-patterns=${{ inputs.ignore-patterns }} \
+              $workspace > results.txt && exitCode=$? || exitCode=$?
+
+            if [ $exitCode -ne 0 ]; then
+              echo "======= ERROR: $workspace ==========" >> failures.txt
+              cat results.txt >> failures.txt
+              echo -e "\n" >> failures.txt
+              HAS_ERROR=$exitCode
+            fi
+
+            echo "======= ANALYZING $workspace =========="
+            cat results.txt
+            echo -e "\n"
+          done
+
+          if [ $HAS_ERROR -ne 0 ]; then
+            echo "REPORT<<EOF" >> "$GITHUB_OUTPUT"
+            cat failures.txt | head -n-1 >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
+
+          exit $HAS_ERROR
+
+      - name: Post unused dependencies check report
+        if: ${{ always() && steps.unused-dependencies-check.conclusion == 'failure' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: unused-dependencies
+          message: |
+            <!-- bot:depcheck -->
+            # UNUSED DEPENDENCIES FOUND !
+
+            > [!WARNING]
+            > Please remove the unused dependencies from the project before merging this PR.
+
+            ```
+            ${{ steps.unused-dependencies-check.outputs.REPORT }}
+            ```
+      - name: Delete unused dependencies check report
+        if: ${{ always() && steps.unused-dependencies-check.conclusion == 'success' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: unused-dependencies
+          delete: true
