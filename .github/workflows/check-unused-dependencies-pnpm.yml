@@ -76,7 +76,7 @@ jobs:
 
           DEFAULT_IGNORES="esbuild, @side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite"
           IGNORE_WORKSPACES_PATTERN=$(echo ${{ inputs.ignore-workspaces }} | sed 's/, */|/g')
-          WORKSPACES=$(pnpm exec --silent --workspaces --include-workspace-root --call 'pwd')
+          WORKSPACES=$(pwd && pnpm -r exec pwd)
 
           echo -e "\nIgnoring workspaces matching pattern: $IGNORE_WORKSPACES_PATTERN"
 
