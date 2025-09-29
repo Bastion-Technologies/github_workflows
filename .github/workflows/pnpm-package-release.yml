@@ -72,7 +72,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Publish package"
-        run: pnpm publish -r --filter=@bastion-technologies/${{ inputs.library-name }}
+        run: pnpm publish --filter=@bastion-technologies/${{ inputs.library-name }} --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: get-npm-version
