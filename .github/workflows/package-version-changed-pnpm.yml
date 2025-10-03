@@ -17,9 +17,11 @@ jobs:
           fetch-depth: 0
       - id: check
         name: git diff yaml definition change
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
         run: |
           git fetch origin main
-          api_file=$(find . -name ${{ inputs.library-name }}.yaml);
+          api_file=$(find . -name "$LIBRARY_NAME.yaml");
           if git diff --exit-code origin/main -- $api_file; then
             echo "isdiff=no" >> "$GITHUB_OUTPUT"
           else
@@ -48,15 +50,21 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
+        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/$LIBRARY_NAME exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
       - run: "git checkout main"
       - name: "main version of library"
-        run: 'echo "MAIN=$(pnpm --filter=@bastion-technologies/${{ inputs.library-name }} exec pnpm version --json | jq -r ".\"@bastion-technologies/${{ inputs.library-name }}\"")" >> $GITHUB_ENV'
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
+        run: 'echo "MAIN=$(pnpm --filter=@bastion-technologies/$LIBRARY_NAME exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
       - name: "compare version"
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
         run: |
           if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
             echo version did not change main: ${{env.MAIN}}, current: ${{env.CURRENT}};
-            echo "::error::Version of ${{ inputs.library-name}} has not been updated" && exit 1;
+            echo "::error::Version of $LIBRARY_NAME has not been updated" && exit 1;
           fi
       - name: "Post comment on PR on failure"
         if: ${{ failure() }}
@@ -92,17 +100,21 @@ jobs:
           fetch-depth: 0
 
       - name: Retrieve API definition file
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
         run: |
           mkdir -p ./.tmp
 
-          API_FILE_PATH=$(find . -name "${{ inputs.library-name }}".yaml)
+          API_FILE_PATH=$(find . -name "$LIBRARY_NAME.yaml")
 
-          git show origin/main:$API_FILE_PATH > ./.tmp/"${{ inputs.library-name }}"-base.yaml
-          cp -p $API_FILE_PATH ./.tmp/"${{ inputs.library-name }}"-revision.yaml
+          git show origin/main:$API_FILE_PATH > ./.tmp/"$LIBRARY_NAME"-base.yaml
+          cp -p $API_FILE_PATH ./.tmp/"$LIBRARY_NAME"-revision.yaml
       - name: Check API breaking changes
         id: oasdiff
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
         run: |
-          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"${{ inputs.library-name }}"-base.yaml /apis/"${{ inputs.library-name }}"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"$LIBRARY_NAME"-base.yaml /apis/"$LIBRARY_NAME"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
 
           if [ $exitCode -eq 0 ]; then
             exit 0
