@@ -43,7 +43,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: "22.11.0"
+          node-version: ${{ vars.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: "**/package-lock.json"
           registry-url: https://npm.pkg.github.com/
@@ -52,9 +52,9 @@ jobs:
         id: cache-nm
         uses: actions/cache@v4
         with:
-          key: cache-nm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
+          key: cache-nm-${{ runner.os }}-${{ vars.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            cache-nm-${{ runner.os }}-
+            cache-nm-${{ runner.os }}-${{ vars.NODE_VERSION }}-
           path: "**/node_modules/**"
 
       - name: install dependencies
