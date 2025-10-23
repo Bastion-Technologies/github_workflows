@@ -36,10 +36,12 @@ jobs:
         run: |
           git config --global user.name "${GITHUB_ACTOR}"
           git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-      
-          git switch -c ${{ github.head_ref }}-bt-dependencies
+
+          git switch -c "$BRANCH_NAME"
           git commit -am "chore: update BT dependencies"
-          git push --set-upstream origin ${{ github.head_ref }}-bt-dependencies --force
+          git push --set-upstream origin "$BRANCH_NAME" --force
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}-bt-dependencies
 
   pr:
     needs: update-bt-dependencies

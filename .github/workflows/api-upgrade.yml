@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 60
     env:
       API: ${{ inputs.api || 'api' }}
+      WORKSPACE_OR_API: ${{ inputs.workspace || inputs.api }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,30 +37,30 @@ jobs:
       - name: Set up package.json path
         id: package
         run: |
-          if [ ${{ inputs.workspace || inputs.api }} ]; then
-            path=$(npm exec -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} --call 'pwd')/package.json
+          if [ -n "$WORKSPACE_OR_API" ]; then
+            path="$(npm exec -w=@bastion-technologies/"$WORKSPACE_OR_API" --call 'pwd')/package.json"
           else
-            path=$(pwd)/package.json
+            path="$(pwd)/package.json"
           fi
 
           echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Should upgrade
         id: should_upgrade
         run: |
-          CURRENT_VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
+          CURRENT_VERSION=$(cat "$PACKAGE_PATH" | jq -r '.version')
           echo "Current version is $CURRENT_VERSION"
 
-          API=${{ inputs.workspace || inputs.api || '' }}
-          TAG=${API:+$API-}$CURRENT_VERSION
+          API="${WORKSPACE_OR_API:-}"
+          TAG="${API:+$API-}$CURRENT_VERSION"
 
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
+            git diff --exit-code --no-patch "$TAG" HEAD package-lock.json && isDiff=$? || isDiff=$?
           else
             echo "Tag $TAG does not exist"
             noTag=1
           fi
 
-          git diff --exit-code --no-patch $TAG HEAD package-lock.json && isDiff=$? || isDiff=$?
+          git diff --exit-code --no-patch "$TAG" HEAD package-lock.json && isDiff=$? || isDiff=$?
 
           if [ $isDiff -eq 0 ]; then
             echo "No changes detected"
@@ -74,12 +75,14 @@ jobs:
           fi
 
           echo "isDiff=$isDiff" >> "$GITHUB_OUTPUT"
+        env:
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
       - name: Run upgrade
         if: steps.should_upgrade.outputs.isDiff == 1
         id: upgrade
         run: |
-          if [ ${{ inputs.workspace || inputs.api }} ]; then
-            SCRIPT="npm -w=@bastion-technologies/${{ inputs.workspace || inputs.api }} version patch --no-git-tag-version"
+          if [ -n "$WORKSPACE_OR_API" ]; then
+            SCRIPT="npm -w=@bastion-technologies/$WORKSPACE_OR_API version patch --no-git-tag-version"
           else
             SCRIPT="npm version patch --no-git-tag-version"
           fi
@@ -90,17 +93,18 @@ jobs:
           echo "Running $SCRIPT"
           $SCRIPT
 
-          VERSION=$(cat ${{ steps.package.outputs.path }} | jq -r '.version')
-          UPGRADE_BRANCH=upgrade-${{env.API}}-$VERSION
-          echo "Upgraded ${{ env.API }} to version $VERSION"
+          VERSION=$(cat "$PACKAGE_PATH" | jq -r '.version')
+          UPGRADE_BRANCH="upgrade-$API-$VERSION"
+          echo "Upgraded $API to version $VERSION"
 
           git switch -c "$UPGRADE_BRANCH"
-          git commit -am "chore: Upgrade ${{ env.API }} to $VERSION"
+          git commit -am "chore: Upgrade $API to $VERSION"
           git push --set-upstream origin "$UPGRADE_BRANCH" --force
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "upgrade_branch=$UPGRADE_BRANCH" >> "$GITHUB_OUTPUT"
         env:
+          PACKAGE_PATH: ${{ steps.package.outputs.path }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create pull request
         if: steps.should_upgrade.outputs.isDiff == 1
