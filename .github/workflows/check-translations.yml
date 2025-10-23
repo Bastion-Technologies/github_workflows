@@ -30,26 +30,31 @@ permissions:
 jobs:
   check-translations:
     runs-on: ubuntu-22.04
+    env:
+      TRANSLATIONS_PATH: ${{ inputs.translations-path }}
+      SOURCE_LANG: ${{ inputs.source-lang }}
+      TARGET_LANGS: ${{ inputs.target-langs }}
+      IGNORE_MANY: ${{ inputs.ignore-many }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Validate
         run: |
-          if [ ! -d "${{ inputs.translations-path }}" ]; then
-            echo "Translations path does not exist: $TRANSLATION_PATH"
+          if [ ! -d "$TRANSLATIONS_PATH" ]; then
+            echo "Translations path does not exist: $TRANSLATIONS_PATH"
             exit 1
           fi
       - name: Get source files
         id: get_source_files
         run: |
-          source_files=$(find ${{ inputs.translations-path }}/${{ inputs.source-lang }} -type f -name '*.json' | sort -u | tr '\n' ',')
+          source_files=$(find "$TRANSLATIONS_PATH/$SOURCE_LANG" -type f -name '*.json' | sort -u | tr '\n' ',')
           echo "source_files=${source_files%,}" >> "$GITHUB_OUTPUT"
       - name: Check missing translations
         id: check_missing_translations
         if: always()
         run: |
-          source_files=$(echo "${{ steps.get_source_files.outputs.source_files }}" | tr ',' '\n')
-          target_langs=$(echo "${{ inputs.target-langs }}" | tr ',' ' ')
+          source_files=$(echo "$SOURCE_FILES_OUTPUT" | tr ',' '\n')
+          target_langs=$(echo "$TARGET_LANGS" | tr ',' ' ')
 
           touch missing_translations.txt
 
@@ -62,7 +67,7 @@ jobs:
 
             for lang in $target_langs; do
               error=""
-              target_file="${{ inputs.translations-path}}/$lang/$base_file"
+              target_file="$TRANSLATIONS_PATH/$lang/$base_file"
 
               if [ -f "$target_file" ]; then
                 target_keys=$(jq -r 'paths | map(tostring) | join(".")' "$target_file" | sort -u)
@@ -98,15 +103,17 @@ jobs:
 
             exit 1
           fi
+        env:
+          SOURCE_FILES_OUTPUT: ${{ steps.get_source_files.outputs.source_files }}
 
       - name: Check outdated translations
         id: check_outdated_translations
         if: always()
         run: |
-          source_files=$(echo "${{ steps.get_source_files.outputs.source_files }}" | tr ',' '\n')
-          target_langs=$(echo "${{ inputs.target-langs }}" | tr ',' ' ')
+          source_files=$(echo "$SOURCE_FILES_OUTPUT" | tr ',' '\n')
+          target_langs=$(echo "$TARGET_LANGS" | tr ',' ' ')
 
-          touch outdated_translations.txt      
+          touch outdated_translations.txt
 
           for source_file in $source_files; do
             base_file=$(basename "$source_file")
@@ -117,13 +124,13 @@ jobs:
 
             for lang in $target_langs; do
               error=""
-              target_file="${{ inputs.translations-path}}/$lang/$base_file"
+              target_file="$TRANSLATIONS_PATH/$lang/$base_file"
 
               if [ -f "$target_file" ]; then
                 target_keys=$(jq -r 'paths | map(tostring) | join(".")' "$target_file" | sort -u)
                 outdated_translations=$(comm -13 <(echo "$source_keys") <(echo "$target_keys"))
 
-                if [ "${{ inputs.ignore-many }}" = true ]; then
+                if [ "$IGNORE_MANY" = true ]; then
                   outdated_translations=$(echo "$outdated_translations" | grep -v "_many$" || true)
                 fi
 
@@ -158,6 +165,8 @@ jobs:
 
             exit 1
           fi
+        env:
+          SOURCE_FILES_OUTPUT: ${{ steps.get_source_files.outputs.source_files }}
 
       - name: Post Missing Translations Report
         if: ${{ always() && steps.check_missing_translations.conclusion == 'failure' }}

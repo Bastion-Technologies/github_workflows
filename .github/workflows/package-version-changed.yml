@@ -9,6 +9,8 @@ on:
 jobs:
   check-if-changed:
     runs-on: ubuntu-22.04
+    env:
+      LIBRARY_NAME: ${{ inputs.library-name }}
     outputs:
       isdiff: ${{ steps.check.outputs.isdiff }}
     steps:
@@ -19,8 +21,8 @@ jobs:
         name: git diff yaml definition change
         run: |
           git fetch origin main
-          api_file=$(find . -name ${{ inputs.library-name }}.yaml);
-          if git diff --exit-code origin/main -- $api_file; then
+          api_file=$(find . -name "$LIBRARY_NAME.yaml")
+          if git diff --exit-code origin/main -- "$api_file"; then
             echo "isdiff=no" >> "$GITHUB_OUTPUT"
           else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT"
@@ -29,6 +31,8 @@ jobs:
     needs: check-if-changed
     if: needs.check-if-changed.outputs.isdiff == 'yes'
     runs-on: ubuntu-22.04
+    env:
+      LIBRARY_NAME: ${{ inputs.library-name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,15 +47,15 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"$LIBRARY_NAME" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
       - run: "git checkout main"
       - name: "main version of library"
-        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"${{ inputs.library-name }}" | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"$LIBRARY_NAME" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
       - name: "compare version"
         run: |
-          if [ "${{env.MAIN}}" = "${{env.CURRENT}}" ]; then
-            echo version did not change main: ${{env.MAIN}}, current: ${{env.CURRENT}};
-            echo "::error::Version of ${{ inputs.library-name}} has not been updated" && exit 1;
+          if [ "$MAIN" = "$CURRENT" ]; then
+            echo version did not change main: $MAIN, current: $CURRENT;
+            echo "::error::Version of $LIBRARY_NAME has not been updated" && exit 1;
           fi
       - name: "Post comment on PR on failure"
         if: ${{ failure() }}
@@ -81,6 +85,8 @@ jobs:
     needs: check-if-changed
     if: needs.check-if-changed.outputs.isdiff == 'yes'
     runs-on: ubuntu-22.04
+    env:
+      LIBRARY_NAME: ${{ inputs.library-name }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -90,14 +96,14 @@ jobs:
         run: |
           mkdir -p ./.tmp
 
-          API_FILE_PATH=$(find . -name "${{ inputs.library-name }}".yaml)
+          API_FILE_PATH=$(find . -name "$LIBRARY_NAME.yaml")
 
-          git show origin/main:$API_FILE_PATH > ./.tmp/"${{ inputs.library-name }}"-base.yaml
-          cp -p $API_FILE_PATH ./.tmp/"${{ inputs.library-name }}"-revision.yaml
+          git show origin/main:"$API_FILE_PATH" > ./.tmp/"$LIBRARY_NAME"-base.yaml
+          cp -p "$API_FILE_PATH" ./.tmp/"$LIBRARY_NAME"-revision.yaml
       - name: Check API breaking changes
         id: oasdiff
         run: |
-          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"${{ inputs.library-name }}"-base.yaml /apis/"${{ inputs.library-name }}"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
+          docker run --rm -v ./.tmp:/apis -t tufin/oasdiff breaking /apis/"$LIBRARY_NAME"-base.yaml /apis/"$LIBRARY_NAME"-revision.yaml --format json --fail-on WARN > report && exitCode=$? || exitCode=$?
 
           if [ $exitCode -eq 0 ]; then
             exit 0
@@ -122,7 +128,7 @@ jobs:
           # Removes the response-property-enum-value-added warning
           REPORT_FILTERED=$(cat report  | jq '[.[] | select ( .id | IN('"$CHECKS_TO_IGNORE"') | not)]')
 
-          echo "Filtered report: $(echo $REPORT_FILTERED | jq)"
+          echo "Filtered report: $(echo "$REPORT_FILTERED" | jq)"
 
           if echo "$REPORT_FILTERED" | jq -e 'length == 0'; then
             echo "No remaining breaking change after filtering"

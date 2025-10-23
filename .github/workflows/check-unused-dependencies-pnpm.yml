@@ -85,7 +85,7 @@ jobs:
           pnpm install -g depcheck typescript
 
           DEFAULT_IGNORES="esbuild, @side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite, prettier-plugin-organize-imports, @types/node"
-          IGNORE_WORKSPACES_PATTERN=$(echo ${{ inputs.ignore-workspaces }} | sed 's/, */|/g')
+          IGNORE_WORKSPACES_PATTERN=$(echo "$IGNORE_WORKSPACES_INPUT" | sed 's/, */|/g')
           WORKSPACES=$(pnpm -r exec pwd)
 
           echo -e "\nIgnoring workspaces matching pattern: $IGNORE_WORKSPACES_PATTERN"
@@ -102,10 +102,10 @@ jobs:
 
           for workspace in $WORKSPACES; do
             depcheck \
-              --skip-missing=${{ inputs.skip-missing }} \
-              --ignores="$DEFAULT_IGNORES,${{ inputs.ignores }}" \
-              --ignore-patterns=${{ inputs.ignore-patterns }} \
-              $workspace > results.txt && exitCode=$? || exitCode=$?
+              --skip-missing="$SKIP_MISSING" \
+              --ignores="$DEFAULT_IGNORES,$IGNORES_INPUT" \
+              --ignore-patterns="$IGNORE_PATTERNS_INPUT" \
+              "$workspace" > results.txt && exitCode=$? || exitCode=$?
 
             if [ $exitCode -ne 0 ]; then
               echo "======= ERROR: $workspace ==========" >> failures.txt
@@ -126,6 +126,11 @@ jobs:
           fi
 
           exit $HAS_ERROR
+        env:
+          IGNORE_WORKSPACES_INPUT: ${{ inputs.ignore-workspaces }}
+          SKIP_MISSING: ${{ inputs.skip-missing }}
+          IGNORES_INPUT: ${{ inputs.ignores }}
+          IGNORE_PATTERNS_INPUT: ${{ inputs.ignore-patterns }}
 
       - name: Post unused dependencies check report
         if: ${{ always() && steps.unused-dependencies-check.conclusion == 'failure' }}

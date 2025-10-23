@@ -35,15 +35,19 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/${{ inputs.library-name }} | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/\"$LIBRARY_NAME\" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
       - run: "git checkout ${{ github.event.before }}"
       - name: "pervious version of library"
-        run: 'echo "PREVIOUS=$(npm version -w=@bastion-technologies/${{ inputs.library-name }} | grep ''@bastion-technologies/${{inputs.library-name}}'')" >> $GITHUB_ENV'
+        run: 'echo "PREVIOUS=$(npm version -w=@bastion-technologies/\"$LIBRARY_NAME\" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
+        env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
       - name: "compare version"
         id: "check"
         run: |
-          if [ "${{env.PREVIOUS}}" = "${{env.CURRENT}}" ]; then
-            echo version did not change main: ${{env.PREVIOUS}}, current: ${{env.CURRENT}};
+          if [ "$PREVIOUS" = "$CURRENT" ]; then
+            echo version did not change main: $PREVIOUS, current: $CURRENT;
             echo "isdiff=no" >> "$GITHUB_OUTPUT";
           else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT";
@@ -66,8 +70,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Publish package"
-        run: npm publish -w=@bastion-technologies/${{ inputs.library-name }}
+        run: npm publish -w=@bastion-technologies/"$LIBRARY_NAME"
         env:
+          LIBRARY_NAME: ${{ inputs.library-name }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: get-npm-version
         id: package-version
