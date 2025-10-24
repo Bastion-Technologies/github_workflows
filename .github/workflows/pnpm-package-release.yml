@@ -37,19 +37,23 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
+        run: |
+          CURRENT=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          echo "CURRENT=$CURRENT" >> "$GITHUB_ENV"
         env:
           LIBRARY_NAME: ${{ inputs.library-name }}
       - run: "git checkout ${{ github.event.before }}"
       - name: "pervious version of library"
-        run: 'echo "PREVIOUS=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
+        run: |
+          PREVIOUS=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          echo "PREVIOUS=$PREVIOUS" >> "$GITHUB_ENV"
         env:
           LIBRARY_NAME: ${{ inputs.library-name }}
       - name: "compare version"
         id: "check"
         run: |
           if [ "$PREVIOUS" = "$CURRENT" ]; then
-            echo version did not change main: $PREVIOUS, current: $CURRENT;
+            echo "version did not change main: $PREVIOUS, current: $CURRENT;"
             echo "isdiff=no" >> "$GITHUB_OUTPUT";
           else
             echo "isdiff=yes" >> "$GITHUB_OUTPUT";
