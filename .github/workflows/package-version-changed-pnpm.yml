@@ -52,14 +52,18 @@ jobs:
           registry-url: https://npm.pkg.github.com/
 
       - name: "current version of library"
-        run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
+        run: |
+          CURRENT=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          echo "CURRENT=$CURRENT" >> "$GITHUB_ENV"
       - run: "git checkout main"
       - name: "main version of library"
-        run: 'echo "MAIN=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
+        run: |
+          MAIN=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          echo "MAIN=$MAIN" >> "$GITHUB_ENV"
       - name: "compare version"
         run: |
           if [ "$MAIN" = "$CURRENT" ]; then
-            echo version did not change main: $MAIN, current: $CURRENT;
+            echo "version did not change main: $MAIN, current: $CURRENT;"
             echo "::error::Version of $LIBRARY_NAME has not been updated" && exit 1;
           fi
       - name: "Post comment on PR on failure"
