@@ -53,7 +53,7 @@ jobs:
 
       - name: "current version of library"
         run: 'echo "CURRENT=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
-      - run: "git checkout main"
+      - run: "git checkout origin/main"
       - name: "main version of library"
         run: 'echo "MAIN=$(pnpm --filter=@bastion-technologies/\"$LIBRARY_NAME\" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")" >> $GITHUB_ENV'
       - name: "compare version"

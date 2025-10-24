@@ -48,7 +48,7 @@ jobs:
 
       - name: "current version of library"
         run: 'echo "CURRENT=$(npm version -w=@bastion-technologies/"$LIBRARY_NAME" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
-      - run: "git checkout main"
+      - run: "git checkout origin/main"
       - name: "main version of library"
         run: 'echo "MAIN=$(npm version -w=@bastion-technologies/"$LIBRARY_NAME" | grep ''@bastion-technologies/$LIBRARY_NAME'')" >> $GITHUB_ENV'
       - name: "compare version"
