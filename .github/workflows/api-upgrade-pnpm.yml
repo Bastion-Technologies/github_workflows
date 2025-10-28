@@ -117,7 +117,7 @@ jobs:
         id: create_pull_request
         uses: fjogeleit/http-request-action@v1
         with:
-          url: "https://dev.bastion.tech/api/nautilus/pr"
+          url: "https://nautilus.bastion.tech/api/nautilus/pr"
           method: POST
           customHeaders: '{"x-shared-secret": "${{ secrets.NAUTILUS_SHARED_SECRET }}"}'
           data: '{"repo": "${{ github.repository }}", "base": "main", "head": "${{ steps.upgrade.outputs.upgrade_branch }}", "title": "chore(deps): [🐚/Automatic Upgrade] Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}", "body": "Upgrade ${{ env.API }} to ${{ steps.upgrade.outputs.version }}" }'

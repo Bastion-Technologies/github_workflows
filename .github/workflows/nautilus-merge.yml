@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Query Nautilus to merge a PR
         run: |
-          curl --location 'https://dev.bastion.tech/api/nautilus/merge' \
+          curl --location 'https://nautilus.bastion.tech/api/nautilus/merge' \
                   --header 'Content-Type: application/json' \
                   --header 'x-shared-secret: ${{ secrets.NAUTILUS_SHARED_SECRET }}' \
                   --fail-with-body \
