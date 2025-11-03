@@ -43,12 +43,18 @@ jobs:
         env:
           LIBRARY_NAME: ${{ inputs.library-name }}
       - run: "git checkout ${{ github.event.before }}"
-      - name: "pervious version of library"
+      - name: "previous version of library"
         run: |
-          PREVIOUS=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          if [ -f "$PACKAGE_JSON_PATH/package.json" ]; then
+            PREVIOUS=$(pnpm --filter="@bastion-technologies/$LIBRARY_NAME" exec pnpm version --json | jq -r ".\"@bastion-technologies/$LIBRARY_NAME\"")
+          else
+            echo "Library did not exist in previous commit (newly created)"
+            PREVIOUS=""
+          fi
           echo "PREVIOUS=$PREVIOUS" >> "$GITHUB_ENV"
         env:
           LIBRARY_NAME: ${{ inputs.library-name }}
+          PACKAGE_JSON_PATH: ${{ inputs.package-json-dir-path }}
       - name: "compare version"
         id: "check"
         run: |
