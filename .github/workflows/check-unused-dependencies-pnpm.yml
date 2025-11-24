@@ -84,7 +84,7 @@ jobs:
         run: |
           pnpm install -g depcheck typescript
 
-          DEFAULT_IGNORES="esbuild, @side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite, prettier-plugin-organize-imports, @types/node"
+          DEFAULT_IGNORES="esbuild, @bastion-technologies/oxlint-config, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite, prettier-plugin-organize-imports, @types/node"
           IGNORE_WORKSPACES_PATTERN=$(echo "$IGNORE_WORKSPACES_INPUT" | sed 's/, */|/g')
           WORKSPACES=$(pnpm -r exec pwd)
 
