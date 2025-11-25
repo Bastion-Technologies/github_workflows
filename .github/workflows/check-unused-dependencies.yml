@@ -80,7 +80,7 @@ jobs:
         run: |
           npm install -g depcheck typescript
 
-          DEFAULT_IGNORES="esbuild, @side/jest-runtime, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite"
+          DEFAULT_IGNORES="esbuild, @bastion-technologies/oxlint-config, @bastion-technologies/spectral-ruleset, @stoplight/spectral-cli, ts-node, @nx/vite"
           IGNORE_WORKSPACES_PATTERN=$(echo "$IGNORE_WORKSPACES_INPUT" | sed 's/, */|/g')
           WORKSPACES=$(npm exec --silent --workspaces --include-workspace-root --call 'pwd')
 
